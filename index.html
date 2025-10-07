@@ -1,0 +1,566 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MapChap - Карта заведений</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #000000;
+            color: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        #map { 
+            width: 100%; 
+            height: 100%; 
+        }
+        
+        .header {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            padding: 12px 18px;
+            z-index: 1000;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .header h1 {
+            font-size: 18px;
+            margin-bottom: 2px;
+            font-weight: 700;
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        .header p {
+            font-size: 12px;
+            opacity: 0.9;
+            color: #cccccc;
+        }
+        
+        .controls {
+            position: absolute;
+            bottom: 15px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            padding: 12px;
+            border-radius: 16px;
+            z-index: 1000;
+            display: flex;
+            gap: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        
+        .btn {
+            padding: 10px 16px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 12px;
+            transition: all 0.3s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            transform: translateY(-1px);
+            border-color: rgba(255, 255, 255, 0.5);
+        }
+        
+        .notification {
+            position: absolute;
+            top: 80px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            color: white;
+            padding: 10px 20px;
+            border-radius: 10px;
+            z-index: 1001;
+            font-weight: 700;
+            font-size: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        
+        .notification.show {
+            opacity: 1;
+        }
+        
+        .categories {
+            position: absolute;
+            top: 80px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            padding: 12px;
+            border-radius: 12px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        
+        .category-title {
+            font-size: 12px;
+            font-weight: 700;
+            margin-bottom: 8px;
+            text-align: center;
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        .category-list {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+        
+        .category-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 8px 12px;
+            border-radius: 8px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid transparent;
+            font-size: 11px;
+            font-weight: 600;
+            color: #ffffff;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        .category-item:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+        
+        .category-item.active {
+            background: rgba(0, 122, 255, 0.3);
+            border-color: rgba(0, 122, 255, 0.6);
+            color: #ffffff;
+        }
+        
+        .category-icon {
+            width: 16px;
+            height: 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+        }
+        
+        .custom-zoom {
+            position: absolute;
+            left: 10px;
+            bottom: 80px;
+            background: rgba(0, 0, 0, 0.9);
+            backdrop-filter: blur(20px);
+            border-radius: 10px;
+            padding: 6px;
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            z-index: 1000;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.5);
+        }
+        
+        .zoom-btn {
+            width: 30px;
+            height: 30px;
+            border: none;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+        }
+        
+        .zoom-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+        }
+
+        /* Индикатор пользователя */
+        .user-indicator {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .user-indicator.show {
+            opacity: 1;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #007AFF, #0056CC);
+            border: 3px solid #ffffff;
+            box-shadow: 0 0 0 2px #007AFF, 0 4px 12px rgba(0,0,0,0.5);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            font-size: 16px;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+        }
+
+        .pulse-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 60px;
+            height: 60px;
+            border: 2px solid #007AFF;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            opacity: 0.6;
+        }
+
+        .direction-arrow {
+            position: absolute;
+            top: -15px;
+            left: 50%;
+            transform: translateX(-50%) rotate(0deg);
+            width: 0;
+            height: 0;
+            border-left: 8px solid transparent;
+            border-right: 8px solid transparent;
+            border-bottom: 12px solid #007AFF;
+            animation: rotate 4s linear infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.6;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 0.3;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.6;
+            }
+        }
+
+        @keyframes rotate {
+            0% {
+                transform: translateX(-50%) rotate(0deg);
+            }
+            100% {
+                transform: translateX(-50%) rotate(360deg);
+            }
+        }
+
+        /* Скрываем ВСЕ элементы Яндекс.Карт */
+        .ymaps-2-1-79-copyright,
+        .ymaps-2-1-79-copyright__wrap,
+        .ymaps-2-1-79-map-copyrights-promo,
+        .ymaps-2-1-79-controls__toolbar,
+        .ymaps-2-1-79-controls__toolbar_right,
+        .ymaps-2-1-79-controls__toolbar_left,
+        .ymaps-2-1-79-search,
+        .ymaps-2-1-79-searchbox,
+        .ymaps-2-1-79-islets__open,
+        .ymaps-2-1-79-islets__close,
+        .ymaps-2-1-79-controls-pane,
+        .ymaps-2-1-79-places-pane,
+        .ymaps-2-1-79-places-of-interest,
+        .ymaps-2-1-79-places-of-interest-v2,
+        .ymaps-2-1-79-zoom,
+        .ymaps-2-1-79-zoom__scale,
+        .ymaps-2-1-79-zoom__plus,
+        .ymaps-2-1-79-zoom__minus,
+        .ymaps-2-1-79-controls__control,
+        .ymaps-2-1-79-fullscreen-control,
+        .ymaps-2-1-79-type-selector,
+        .ymaps-2-1-79-ruler-control,
+        .ymaps-2-1-79-traffic-control,
+        .ymaps-2-1-79-geolocation-control {
+            display: none !important;
+            opacity: 0 !important;
+            visibility: hidden !important;
+            pointer-events: none !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>🗺️ MapChap</h1>
+        <p>Карта заведений</p>
+    </div>
+    
+    <div id="map"></div>
+    
+    <div class="user-indicator" id="userIndicator">
+        <div class="pulse-ring"></div>
+        <div class="direction-arrow"></div>
+        <div class="user-avatar">👤</div>
+    </div>
+    
+    <div class="notification" id="notification"></div>
+    
+    <div class="categories">
+        <div class="category-title">Категории</div>
+        <div class="category-list">
+            <div class="category-item active" onclick="filterCategory('all')">
+                <div class="category-icon">🏪</div>
+                <span>Все</span>
+            </div>
+            <div class="category-item" onclick="filterCategory('cafe')">
+                <div class="category-icon">☕</div>
+                <span>Кафе</span>
+            </div>
+            <div class="category-item" onclick="filterCategory('restaurant')">
+                <div class="category-icon">🍽️</div>
+                <span>Рестораны</span>
+            </div>
+        </div>
+    </div>
+    
+    <div class="custom-zoom">
+        <button class="zoom-btn" onclick="zoomIn()">+</button>
+        <button class="zoom-btn" onclick="zoomOut()">−</button>
+    </div>
+    
+    <div class="controls">
+        <button class="btn" onclick="findNearby()">📍 Рядом</button>
+        <button class="btn" onclick="showAllPlaces()">🏪 Все</button>
+    </div>
+
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=07b74146-5f5a-46bf-a2b1-cf6d052a41bb&lang=ru_RU"></script>
+    <script>
+        let map;
+        let userLocationMarker;
+        let userIndicator;
+
+        function showNotification(message, duration = 1500) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
+        }
+
+        function initMap() {
+            ymaps.ready(function() {
+                map = new ymaps.Map('map', {
+                    center: [55.751244, 37.618423],
+                    zoom: 13
+                }, {
+                    // Отключаем ВСЕ контролы Яндекса
+                    suppressMapOpenBlock: true,
+                    suppressObsoleteBrowserNotifier: true,
+                    yandexMapDisablePoiInteractivity: true,
+                    zoomControl: false,
+                    searchControl: false,
+                    trafficControl: false,
+                    typeSelector: false,
+                    fullscreenControl: false,
+                    geolocationControl: false,
+                    rulerControl: false
+                });
+
+                // Устанавливаем тёмную тему карты
+                map.setType('yandex#dark');
+                
+                // Добавляем заведения
+                addPlaces();
+                
+                // Скрываем элементы Яндекса
+                hideYandexElements();
+                
+                // Инициализируем индикатор
+                initUserIndicator();
+                
+                showNotification('🗺️ Карта загружена');
+
+                if (window.Telegram && Telegram.WebApp) {
+                    Telegram.WebApp.ready();
+                    Telegram.WebApp.expand();
+                }
+            });
+        }
+
+        function initUserIndicator() {
+            userIndicator = document.getElementById('userIndicator');
+        }
+
+        function updateUserIndicator(coords) {
+            if (!userIndicator) return;
+            
+            // Преобразуем координаты в пиксели на карте
+            const pixelCoords = map.getPixelCoordinates(coords);
+            
+            // Позиционируем индикатор
+            userIndicator.style.left = (pixelCoords[0] - 30) + 'px';
+            userIndicator.style.top = (pixelCoords[1] - 60) + 'px';
+            userIndicator.classList.add('show');
+        }
+
+        function hideYandexElements() {
+            setInterval(() => {
+                const elements = document.querySelectorAll([
+                    '.ymaps-2-1-79-copyright',
+                    '.ymaps-2-1-79-controls',
+                    '.ymaps-2-1-79-zoom',
+                    '.ymaps-2-1-79-search',
+                    '.ymaps-2-1-79-islets',
+                    '.ymaps-2-1-79-places-pane',
+                    '[class*="copyright"]',
+                    '[class*="control"]'
+                ].join(','));
+                
+                elements.forEach(el => {
+                    el.style.display = 'none';
+                    el.style.opacity = '0';
+                    el.style.visibility = 'hidden';
+                });
+            }, 100);
+        }
+
+        function addPlaces() {
+            const places = [
+                [55.751244, 37.618423, 'Кофейня "Уют"', 'cafe'],
+                [55.753215, 37.622504, 'Ресторан "Вкусно"', 'restaurant'],
+                [55.749762, 37.621894, 'Магазин "Супер"', 'shop']
+            ];
+
+            places.forEach(function(place) {
+                const placemark = new ymaps.Placemark([place[0], place[1]], {
+                    balloonContent: `
+                        <div style="color: #000; padding: 10px; min-width: 180px;">
+                            <h3 style="margin: 0 0 6px 0; color: #1a1a1a; font-size: 14px; font-weight: bold;">${place[2]}</h3>
+                            <p style="margin: 0; color: #666; font-size: 12px; font-weight: 600;">${place[3] === 'cafe' ? '☕ Кафе' : place[3] === 'restaurant' ? '🍽️ Ресторан' : '🛍️ Магазин'}</p>
+                        </div>
+                    `
+                }, {
+                    preset: 'islands#darkBlueIcon'
+                });
+                map.geoObjects.add(placemark);
+            });
+        }
+
+        function zoomIn() {
+            map.setZoom(map.getZoom() + 1);
+        }
+
+        function zoomOut() {
+            map.setZoom(map.getZoom() - 1);
+        }
+
+        function findNearby() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const coords = [position.coords.latitude, position.coords.longitude];
+                        map.setCenter(coords, 16);
+                        
+                        if (userLocationMarker) {
+                            map.geoObjects.remove(userLocationMarker);
+                        }
+                        
+                        userLocationMarker = new ymaps.Placemark(coords, {
+                            balloonContent: '📍 Ваше местоположение'
+                        }, {
+                            preset: 'islands#blueIcon'
+                        });
+                        
+                        map.geoObjects.add(userLocationMarker);
+                        
+                        // Обновляем индикатор
+                        updateUserIndicator(coords);
+                        
+                        showNotification('📍 Местоположение определено');
+                    },
+                    (error) => {
+                        showNotification('❌ Ошибка геолокации');
+                    }
+                );
+            } else {
+                showNotification('❌ Геолокация не поддерживается');
+            }
+        }
+
+        function showAllPlaces() {
+            map.setCenter([55.751244, 37.618423], 13);
+            // Скрываем индикатор при показе всех мест
+            userIndicator.classList.remove('show');
+            showNotification('🏪 Все заведения');
+        }
+
+        function filterCategory(category) {
+            document.querySelectorAll('.category-item').forEach(item => {
+                item.classList.remove('active');
+            });
+            event.target.closest('.category-item').classList.add('active');
+            
+            const messages = {
+                'all': '🏪 Все',
+                'cafe': '☕ Кафе', 
+                'restaurant': '🍽️ Рестораны'
+            };
+            
+            showNotification(messages[category]);
+        }
+
+        if (window.ymaps) {
+            initMap();
+        } else {
+            window.onload = initMap;
+        }
+    </script>
+</body>
+</html>
