@@ -1,0 +1,343 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MapChap - Карта заведений</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #000000;
+            color: white;
+            min-height: 100vh;
+            overflow: hidden;
+        }
+        
+        .app-container {
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+        }
+        
+        /* Minimal Header */
+        .header {
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            padding: 15px 20px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            position: relative;
+            z-index: 1000;
+        }
+        
+        .app-title {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        
+        .logo {
+            width: 40px;
+            height: 40px;
+            background: linear-gradient(135deg, #007AFF, #5856D6);
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+            box-shadow: 0 4px 15px rgba(0, 122, 255, 0.4);
+        }
+        
+        .title-text h1 {
+            font-size: 20px;
+            font-weight: 700;
+            margin-bottom: 2px;
+        }
+        
+        .title-text p {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        
+        /* Full Screen Map */
+        .map-container {
+            flex: 1;
+            position: relative;
+            background: #1a1a1a;
+        }
+        
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+        
+        .map-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: linear-gradient(45deg, #2a2a2a 25%, #333 25%, #333 50%, #2a2a2a 50%, #2a2a2a 75%, #333 75%, #333 100%);
+            background-size: 40px 40px;
+            color: #666;
+            font-size: 18px;
+        }
+        
+        /* Floating Controls */
+        .controls {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            padding: 15px;
+            border-radius: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            gap: 12px;
+            z-index: 1000;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+        }
+        
+        .btn {
+            padding: 14px 24px;
+            border: none;
+            border-radius: 16px;
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+            transform: translateY(-2px);
+        }
+        
+        .btn:active {
+            transform: translateY(0);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #007AFF, #0056CC);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+        
+        /* Loading State */
+        .loading {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.9);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
+        }
+        
+        .loading.hidden {
+            display: none;
+        }
+        
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 3px solid rgba(255, 255, 255, 0.3);
+            border-top: 3px solid #007AFF;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading Screen -->
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>Загрузка карты...</div>
+    </div>
+    
+    <div class="app-container">
+        <!-- Minimal Header -->
+        <div class="header">
+            <div class="app-title">
+                <div class="logo">🗺️</div>
+                <div class="title-text">
+                    <h1>MapChap</h1>
+                    <p>Карта заведений</p>
+                </div>
+            </div>
+        </div>
+        
+        <!-- Map Container -->
+        <div class="map-container">
+            <div id="map" class="map-placeholder">
+                Загрузка карты...
+            </div>
+        </div>
+        
+        <!-- Floating Controls -->
+        <div class="controls">
+            <button class="btn btn-primary" onclick="app.findNearby()">
+                📍 Рядом со мной
+            </button>
+            <button class="btn" onclick="app.showDemoPlaces()">
+                🏪 Показать заведения
+            </button>
+        </div>
+    </div>
+
+    <!-- Яндекс.Карты загружаем в конце -->
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=07b74146-5f5a-46bf-a2b1-cf6d052a41bb&lang=ru_RU"></script>
+
+    <script>
+        class MapChapApp {
+            constructor() {
+                this.map = null;
+                this.tg = null;
+                this.places = [];
+                this.init();
+            }
+            
+            async init() {
+                console.log('Инициализация MapChap...');
+                
+                // Инициализация Telegram WebApp
+                if (window.Telegram && Telegram.WebApp) {
+                    this.tg = Telegram.WebApp;
+                    this.tg.ready();
+                    this.tg.expand();
+                    console.log('Telegram WebApp подключен');
+                }
+                
+                // Ждем загрузку Яндекс.Карт
+                this.waitForYmaps();
+            }
+            
+            waitForYmaps() {
+                if (window.ymaps) {
+                    console.log('Яндекс.Карты уже загружены');
+                    this.initMap();
+                } else {
+                    console.log('Ожидание Яндекс.Карт...');
+                    setTimeout(() => {
+                        if (window.ymaps) {
+                            this.initMap();
+                        } else {
+                            console.error('Яндекс.Карты не загрузились');
+                            this.showError('Не удалось загрузить карты');
+                        }
+                    }, 3000);
+                }
+            }
+            
+            initMap() {
+                try {
+                    console.log('Инициализация карты...');
+                    
+                    ymaps.ready(() => {
+                        try {
+                            // Создаем простую карту
+                            this.map = new ymaps.Map('map', {
+                                center: [55.751244, 37.618423],
+                                zoom: 13
+                            }, {
+                                // Минимальные настройки
+                                suppressMapOpenBlock: true,
+                                suppressObsoleteBrowserNotifier: true
+                            });
+                            
+                            console.log('Карта создана успешно');
+                            this.hideLoading();
+                            
+                        } catch (error) {
+                            console.error('Ошибка создания карты:', error);
+                            this.showError('Ошибка создания карты: ' + error.message);
+                        }
+                    });
+                    
+                } catch (error) {
+                    console.error('Ошибка инициализации:', error);
+                    this.showError('Ошибка инициализации: ' + error.message);
+                }
+            }
+            
+            hideLoading() {
+                document.getElementById('loading').classList.add('hidden');
+            }
+            
+            findNearby() {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition(
+                        (position) => {
+                            const coords = [position.coords.latitude, position.coords.longitude];
+                            if (this.map) {
+                                this.map.setCenter(coords, 16);
+                            }
+                            this.showNotification('📍 Ваше местоположение определено!');
+                        },
+                        (error) => {
+                            this.showNotification('❌ Не удалось определить местоположение');
+                        }
+                    );
+                } else {
+                    this.showNotification('❌ Геолокация не поддерживается');
+                }
+            }
+            
+            showDemoPlaces() {
+                this.showNotification('🏪 Демо: Показаны тестовые заведения');
+                // Здесь будет логика показа заведений
+            }
+            
+            showError(message) {
+                document.getElementById('loading').innerHTML = `
+                    <div style="text-align: center;">
+                        <div style="font-size: 48px; margin-bottom: 20px;">❌</div>
+                        <div style="font-size: 18px; margin-bottom: 10px;">${message}</div>
+                        <div style="font-size: 14px; opacity: 0.7; margin-bottom: 20px;">Проверьте подключение к интернету</div>
+                        <button onclick="location.reload()" style="padding: 12px 24px; border: none; border-radius: 12px; background: #007AFF; color: white; font-weight: bold; cursor: pointer;">
+                            Обновить страницу
+                        </button>
+                    </div>
+                `;
+            }
+            
+            showNotification(message) {
+                alert(`🗺️ MapChap\n\n${message}`);
+            }
+        }
+        
+        // Инициализация приложения
+        const app = new MapChapApp();
+        window.app = app;
+        
+        // Глобальная обработка ошибок
+        window.addEventListener('error', function(e) {
+            console.error('Global error:', e.error);
+        });
+    </script>
+</body>
+</html>
