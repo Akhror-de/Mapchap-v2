@@ -1,0 +1,824 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>MapChap - Выгодные предложения</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        * { 
+            margin: 0; 
+            padding: 0; 
+            box-sizing: border-box; 
+        }
+        
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; 
+            background: #000000;
+            color: #ffffff;
+            height: 100vh;
+            overflow: hidden;
+        }
+        
+        #map { 
+            width: 100%; 
+            height: 100%; 
+        }
+
+        .loading {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            text-align: center;
+            z-index: 1000;
+            background: rgba(0, 0, 0, 0.9);
+            padding: 20px;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+
+        .spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255, 255, 255, 0.3);
+            border-top: 4px solid #00FF87;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .header {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            right: 20px;
+            background: rgba(0, 0, 0, 0.95);
+            padding: 15px;
+            z-index: 1000;
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            text-align: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .logo {
+            font-size: 20px;
+            font-weight: 800;
+            margin-bottom: 5px;
+            color: #00FF87;
+        }
+
+        .header p {
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .compact-menu {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 1000;
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+        
+        .main-btn {
+            width: 60px;
+            height: 60px;
+            background: #00FF87;
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 24px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 15px rgba(0, 255, 135, 0.4);
+            transition: transform 0.2s;
+        }
+
+        .main-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .menu-btn {
+            width: 50px;
+            height: 50px;
+            background: rgba(255, 255, 255, 0.15);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.2s;
+        }
+
+        .menu-btn:active {
+            transform: scale(0.95);
+        }
+        
+        .notification {
+            position: absolute;
+            top: 100px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            padding: 12px 20px;
+            border-radius: 8px;
+            z-index: 1001;
+            font-weight: 600;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            opacity: 0;
+            transition: opacity 0.3s ease;
+            text-align: center;
+            backdrop-filter: blur(10px);
+            max-width: 90%;
+        }
+        
+        .notification.show {
+            opacity: 1;
+        }
+
+        .custom-zoom {
+            position: absolute;
+            left: 20px;
+            bottom: 90px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 5px;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+            z-index: 1000;
+            backdrop-filter: blur(10px);
+        }
+        
+        .zoom-btn {
+            width: 35px;
+            height: 35px;
+            border: none;
+            border-radius: 6px;
+            background: rgba(255, 255, 255, 0.15);
+            color: white;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .zoom-btn:active {
+            transform: scale(0.95);
+        }
+
+        /* Стили для списка предложений */
+        .places-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 2000;
+            display: none;
+            flex-direction: column;
+            backdrop-filter: blur(10px);
+        }
+
+        .places-header {
+            padding: 20px;
+            background: rgba(0, 0, 0, 0.9);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-btn {
+            width: 40px;
+            height: 40px;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 50%;
+            color: white;
+            font-size: 20px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .places-title {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .places-list {
+            flex: 1;
+            overflow-y: auto;
+            padding: 15px;
+        }
+
+        .place-item {
+            background: rgba(255, 255, 255, 0.1);
+            padding: 15px;
+            margin-bottom: 10px;
+            border-radius: 12px;
+            border-left: 4px solid #00FF87;
+            transition: transform 0.2s;
+        }
+
+        .place-item:active {
+            transform: scale(0.98);
+        }
+
+        .place-name {
+            font-weight: bold;
+            margin-bottom: 8px;
+            font-size: 16px;
+        }
+
+        .place-offer {
+            color: #00FF87;
+            font-weight: bold;
+            font-size: 14px;
+            margin-bottom: 5px;
+        }
+
+        .place-description {
+            font-size: 13px;
+            opacity: 0.8;
+            margin-bottom: 8px;
+        }
+
+        .place-distance {
+            font-size: 12px;
+            opacity: 0.7;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+
+        /* Индикатор пользователя */
+        .user-indicator {
+            position: absolute;
+            width: 60px;
+            height: 60px;
+            pointer-events: none;
+            z-index: 999;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+
+        .user-indicator.show {
+            opacity: 1;
+        }
+
+        .user-pin {
+            width: 24px;
+            height: 24px;
+            background: #007AFF;
+            border: 3px solid white;
+            border-radius: 50%;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: 0 2px 10px rgba(0, 122, 255, 0.5);
+        }
+
+        .pulse-ring {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 40px;
+            height: 40px;
+            border: 2px solid #007AFF;
+            border-radius: 50%;
+            animation: pulse 2s infinite;
+            opacity: 0.6;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.6;
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                opacity: 0.3;
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                opacity: 0.6;
+            }
+        }
+
+        /* Диалог геолокации */
+        .geo-dialog {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            background: rgba(0, 0, 0, 0.95);
+            padding: 25px;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            z-index: 2001;
+            text-align: center;
+            max-width: 90%;
+            backdrop-filter: blur(20px);
+            display: none;
+        }
+
+        .geo-dialog h3 {
+            margin-bottom: 15px;
+            color: #00FF87;
+        }
+
+        .geo-dialog p {
+            margin-bottom: 20px;
+            opacity: 0.8;
+            line-height: 1.4;
+        }
+
+        .geo-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+
+        .geo-btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 10px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s;
+        }
+
+        .geo-btn.primary {
+            background: #00FF87;
+            color: white;
+        }
+
+        .geo-btn.secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .geo-btn:active {
+            transform: scale(0.95);
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="logo">🗺️ MapChap</div>
+        <p>Выгодные предложения рядом с вами</p>
+    </div>
+    
+    <div id="map"></div>
+    
+    <div class="loading" id="loading">
+        <div class="spinner"></div>
+        <div>Загружаем карту...</div>
+    </div>
+
+    <div class="user-indicator" id="userIndicator">
+        <div class="pulse-ring"></div>
+        <div class="user-pin"></div>
+    </div>
+
+    <div class="notification" id="notification"></div>
+    
+    <div class="custom-zoom">
+        <button class="zoom-btn" onclick="zoomIn()">+</button>
+        <button class="zoom-btn" onclick="zoomOut()">−</button>
+    </div>
+    
+    <div class="compact-menu">
+        <button class="menu-btn" onclick="findNearby()" title="Рядом со мной">📍</button>
+        <button class="menu-btn" onclick="showAllPlaces()" title="Все предложения">🏪</button>
+        <button class="menu-btn" onclick="showPlacesList()" title="Список предложений">📋</button>
+        <button class="main-btn" onclick="getUserLocation()" title="Мое местоположение">👤</button>
+    </div>
+
+    <!-- Оверлей списка предложений -->
+    <div class="places-overlay" id="placesOverlay">
+        <div class="places-header">
+            <button class="back-btn" onclick="hidePlacesList()">←</button>
+            <div class="places-title">Все предложения</div>
+        </div>
+        <div class="places-list" id="placesList">
+            <!-- Список будет заполнен JavaScript -->
+        </div>
+    </div>
+
+    <!-- Диалог геолокации -->
+    <div class="geo-dialog" id="geoDialog">
+        <h3>📍 Определение местоположения</h3>
+        <p>Разрешите доступ к вашему местоположению, чтобы видеть предложения рядом с вами</p>
+        <div class="geo-buttons">
+            <button class="geo-btn primary" onclick="requestGeolocation()">Разрешить</button>
+            <button class="geo-btn secondary" onclick="hideGeoDialog()">Позже</button>
+        </div>
+    </div>
+
+    <script>
+        let map;
+        let userLocationMarker;
+        let userLocation = null;
+        let isMapLoaded = false;
+        let geolocationAttempts = 0;
+
+        const places = [
+            {
+                name: 'Кофейня "Уют"',
+                offer: 'Кофе + десерт = 490 ₽',
+                description: 'Арабский кофе с восточными сладостями. Акция действует до конца месяца.',
+                category: 'food',
+                distance: '250 м',
+                coords: [55.751244, 37.618423]
+            },
+            {
+                name: 'Ресторан "Вкусно"',
+                offer: 'Скидка 25% на ужин',
+                description: 'С 18:00 до 22:00 при предъявлении этой карты. Включая напитки!',
+                category: 'food',
+                distance: '500 м',
+                coords: [55.753215, 37.622504]
+            },
+            {
+                name: 'Магазин "Супер"',
+                offer: '3 по цене 2 на молочку',
+                description: 'Акция на все молочные продукты. Торопитесь!',
+                category: 'shopping',
+                distance: '800 м',
+                coords: [55.749762, 37.621894]
+            },
+            {
+                name: 'Салон красоты "Шарм"',
+                offer: 'Стрижка + укладка = 1200 ₽',
+                description: 'Для новых клиентов. Запись по телефону.',
+                category: 'services',
+                distance: '1.2 км',
+                coords: [55.755500, 37.617800]
+            }
+        ];
+
+        function showNotification(message, duration = 2000) {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, duration);
+        }
+
+        function showLoading(show) {
+            const loading = document.getElementById('loading');
+            loading.style.display = show ? 'block' : 'none';
+        }
+
+        function showGeoDialog() {
+            const dialog = document.getElementById('geoDialog');
+            dialog.style.display = 'block';
+        }
+
+        function hideGeoDialog() {
+            const dialog = document.getElementById('geoDialog');
+            dialog.style.display = 'none';
+        }
+
+        function initMap() {
+            showLoading(true);
+            
+            const script = document.createElement('script');
+            script.src = 'https://api-maps.yandex.ru/2.1/?apikey=07b74146-5f5a-46bf-a2b1-cf6d052a41bb&lang=ru_RU';
+            
+            script.onload = function() {
+                if (typeof ymaps !== 'undefined') {
+                    loadYandexMap();
+                }
+            };
+            
+            script.onerror = function() {
+                showLoading(false);
+                showNotification('❌ Карта временно недоступна');
+            };
+            
+            document.head.appendChild(script);
+
+            setTimeout(() => {
+                if (!isMapLoaded) {
+                    showLoading(false);
+                }
+            }, 3000);
+        }
+
+        function loadYandexMap() {
+            ymaps.ready(() => {
+                try {
+                    map = new ymaps.Map('map', {
+                        center: [55.751244, 37.618423],
+                        zoom: 13,
+                        controls: []
+                    }, {
+                        suppressMapOpenBlock: true,
+                        suppressObsoleteBrowserNotifier: true
+                    });
+
+                    map.controls.remove('zoomControl');
+                    map.controls.remove('searchControl');
+                    map.controls.remove('trafficControl');
+                    map.controls.remove('typeSelector');
+                    map.controls.remove('fullscreenControl');
+                    map.controls.remove('geolocationControl');
+                    map.controls.remove('rulerControl');
+
+                    addPlacesToMap();
+                    
+                    isMapLoaded = true;
+                    showLoading(false);
+                    showNotification('✅ Карта загружена!');
+
+                } catch (error) {
+                    console.error('Map error:', error);
+                    showLoading(false);
+                    showNotification('🗺️ Используйте список предложений');
+                }
+            });
+        }
+
+        function addPlacesToMap() {
+            if (!map) return;
+
+            places.forEach(place => {
+                const placemark = new ymaps.Placemark(place.coords, {
+                    balloonContent: `
+                        <div style="padding: 15px; color: #000; min-width: 250px; font-family: -apple-system, sans-serif;">
+                            <div style="font-weight: bold; margin-bottom: 8px; font-size: 16px;">${place.name}</div>
+                            <div style="color: #00FF87; font-weight: bold; margin-bottom: 8px; font-size: 14px;">${place.offer}</div>
+                            <div style="color: #666; margin-bottom: 8px; font-size: 13px;">${place.description}</div>
+                            <div style="font-size: 12px; color: #999;">📍 ${place.distance}</div>
+                        </div>
+                    `,
+                    hintContent: place.name
+                }, {
+                    preset: 'islands#circleIcon',
+                    iconColor: '#00FF87'
+                });
+
+                map.geoObjects.add(placemark);
+            });
+        }
+
+        function showPlacesList() {
+            const placesList = document.getElementById('placesList');
+            const overlay = document.getElementById('placesOverlay');
+            
+            placesList.innerHTML = places.map(place => `
+                <div class="place-item" onclick="showOnMap(${place.coords[0]}, ${place.coords[1]})">
+                    <div class="place-name">${place.name}</div>
+                    <div class="place-offer">${place.offer}</div>
+                    <div class="place-description">${place.description}</div>
+                    <div class="place-distance">📍 ${place.distance}</div>
+                </div>
+            `).join('');
+            
+            overlay.style.display = 'flex';
+        }
+
+        function hidePlacesList() {
+            const overlay = document.getElementById('placesOverlay');
+            overlay.style.display = 'none';
+        }
+
+        function showOnMap(lat, lon) {
+            if (map) {
+                map.setCenter([lat, lon], 16);
+                hidePlacesList();
+                showNotification('📍 Показано на карте');
+            }
+        }
+
+        function updateUserIndicator(coords) {
+            const indicator = document.getElementById('userIndicator');
+            if (!map || !coords) {
+                indicator.classList.remove('show');
+                return;
+            }
+
+            indicator.classList.add('show');
+            
+            const updatePosition = () => {
+                const pixelCoords = map.getPixelCoordinates(coords);
+                indicator.style.left = (pixelCoords[0] - 30) + 'px';
+                indicator.style.top = (pixelCoords[1] - 60) + 'px';
+            };
+            
+            updatePosition();
+            map.events.add('boundschange', updatePosition);
+        }
+
+        function getUserLocation() {
+            geolocationAttempts++;
+            
+            // Проверяем поддержку геолокации
+            if (!navigator.geolocation) {
+                showNotification('❌ Ваш браузер не поддерживает геолокацию');
+                return;
+            }
+
+            showNotification('📍 Определяем местоположение...');
+
+            // Пробуем разные методы
+            const options = {
+                enableHighAccuracy: true,
+                timeout: 10000,
+                maximumAge: 60000
+            };
+
+            navigator.geolocation.getCurrentPosition(
+                // Успех
+                (position) => {
+                    handleLocationSuccess(position);
+                },
+                // Ошибка
+                (error) => {
+                    handleLocationError(error);
+                },
+                options
+            );
+        }
+
+        function requestGeolocation() {
+            hideGeoDialog();
+            getUserLocation();
+        }
+
+        function handleLocationSuccess(position) {
+            userLocation = [position.coords.latitude, position.coords.longitude];
+            const accuracy = position.coords.accuracy;
+            
+            console.log('Location found:', userLocation, 'Accuracy:', accuracy + 'm');
+            
+            if (map) {
+                map.setCenter(userLocation, 15);
+                
+                // Удаляем старый маркер
+                if (userLocationMarker) {
+                    map.geoObjects.remove(userLocationMarker);
+                }
+                
+                // Создаем новый маркер с учетом точности
+                userLocationMarker = new ymaps.Placemark(userLocation, {
+                    balloonContent: `
+                        <div style="color: #000; padding: 10px;">
+                            <div style="font-weight: bold;">📍 Ваше местоположение</div>
+                            <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                                Точность: ${Math.round(accuracy)} метров
+                            </div>
+                        </div>
+                    `
+                }, {
+                    preset: 'islands#blueCircleDotIcon',
+                    iconColor: '#007AFF'
+                });
+                
+                map.geoObjects.add(userLocationMarker);
+                
+                // Обновляем индикатор
+                updateUserIndicator(userLocation);
+                
+                showNotification('🎉 Местоположение определено!');
+                
+            } else {
+                showNotification('📍 Готово! Местоположение сохранено');
+            }
+            
+            geolocationAttempts = 0;
+        }
+
+        function handleLocationError(error) {
+            console.error('Geolocation error:', error);
+            
+            let errorMessage = '❌ Не удалось определить местоположение';
+            
+            switch(error.code) {
+                case error.PERMISSION_DENIED:
+                    errorMessage = '❌ Доступ к геолокации запрещен';
+                    // Показываем диалог с объяснением
+                    if (geolocationAttempts === 1) {
+                        setTimeout(showGeoDialog, 500);
+                    }
+                    break;
+                case error.POSITION_UNAVAILABLE:
+                    errorMessage = '❌ Информация о местоположении недоступна';
+                    break;
+                case error.TIMEOUT:
+                    errorMessage = '❌ Время определения истекло';
+                    // Пробуем еще раз с другими настройками
+                    if (geolocationAttempts < 2) {
+                        setTimeout(getUserLocation, 1000);
+                        return;
+                    }
+                    break;
+            }
+            
+            showNotification(errorMessage);
+            
+            // Если карта есть, показываем подсказку
+            if (map && geolocationAttempts >= 2) {
+                showNotification('📍 Используйте кнопки ниже для навигации');
+            }
+        }
+
+        function findNearby() {
+            if (userLocation && map) {
+                map.setCenter(userLocation, 15);
+                showNotification('📍 Показаны предложения рядом');
+            } else {
+                // Если местоположение не определено, используем центр Москвы
+                if (map) {
+                    map.setCenter([55.751244, 37.618423], 13);
+                    showNotification('🏪 Показаны все предложения в городе');
+                }
+                getUserLocation();
+            }
+        }
+
+        function showAllPlaces() {
+            if (map) {
+                map.setCenter([55.751244, 37.618423], 13);
+                showNotification('🏪 Показаны все предложения');
+            }
+        }
+
+        function zoomIn() {
+            if (map) {
+                map.setZoom(map.getZoom() + 1);
+            }
+        }
+
+        function zoomOut() {
+            if (map) {
+                map.setZoom(map.getZoom() - 1);
+            }
+        }
+
+        // Автоматически пробуем получить местоположение при загрузке
+        function tryAutoGeolocation() {
+            if (navigator.geolocation) {
+                // Быстрая попытка с коротким таймаутом
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        handleLocationSuccess(position);
+                    },
+                    (error) => {
+                        // Автоматическая геолокация не сработала - это нормально
+                        console.log('Auto-geolocation failed, user will manually request');
+                    },
+                    {
+                        enableHighAccuracy: false,
+                        timeout: 5000,
+                        maximumAge: 300000
+                    }
+                );
+            }
+        }
+
+        // Инициализация
+        if (window.Telegram && Telegram.WebApp) {
+            Telegram.WebApp.ready();
+            Telegram.WebApp.expand();
+        }
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            
+            // Пробуем автоматическую геолокацию через 2 секунды после загрузки
+            setTimeout(tryAutoGeolocation, 2000);
+            
+            // Подсказка для пользователя
+            setTimeout(() => {
+                showNotification('👆 Нажмите 👤 для определения местоположения');
+            }, 4000);
+        });
+    </script>
+</body>
+</html>
