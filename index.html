@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Карты • Telegram Mini App</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link rel="stylesheet" href="styles.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        /* Стили для Leaflet в тёмной теме */
+        .leaflet-container {
+            background: #1a1a1a;
+            font-family: 'Inter', sans-serif;
+        }
+        .leaflet-control-zoom a {
+            background: rgba(40, 40, 40, 0.95) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            backdrop-filter: blur(10px);
+        }
+        .leaflet-control-zoom a:hover {
+            background: rgba(60, 60, 60, 0.95) !important;
+        }
+        .leaflet-popup-content-wrapper {
+            background: rgba(40, 40, 40, 0.95) !important;
+            color: #ffffff !important;
+            backdrop-filter: blur(10px);
+            border-radius: 12px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        .leaflet-popup-tip {
+            background: rgba(40, 40, 40, 0.95) !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Навигационная панель -->
+        <nav class="navbar">
+            <div class="nav-brand">Карты</div>
+            <div class="nav-tabs">
+                <button class="nav-tab active" data-tab="map">Карта</button>
+                <button class="nav-tab" data-tab="favorites">Избранное</button>
+                <button class="nav-tab" data-tab="categories">Категории</button>
+                <button class="nav-tab" data-tab="business">Бизнес</button>
+            </div>
+        </nav>
+
+        <!-- Основной контейнер карты -->
+        <main class="main-content">
+            <div id="map" class="map-container"></div>
+
+            <!-- Поисковая панель -->
+            <div class="search-container">
+                <div class="search-box">
+                    <input type="text" placeholder="Поиск места или адреса..." class="search-input" id="search-input">
+                    <button class="search-btn" id="search-btn">🔍</button>
+                </div>
+            </div>
+
+            <!-- Кастомные элементы управления -->
+            <div class="map-controls">
+                <button class="control-btn zoom-in" id="zoom-in">+</button>
+                <button class="control-btn zoom-out" id="zoom-out">−</button>
+                <button class="control-btn fullscreen" id="fullscreen">⛶</button>
+                <button class="control-btn location" id="location">📍</button>
+            </div>
+
+            <!-- Фильтры категорий -->
+            <div class="categories-panel">
+                <div class="category-filters">
+                    <button class="category-filter active" data-category="all">Все</button>
+                    <button class="category-filter" data-category="cafe">🍴 Кафе</button>
+                    <button class="category-filter" data-category="restaurant">🍷 Рестораны</button>
+                    <button class="category-filter" data-category="shop">🛍️ Магазины</button>
+                    <button class="category-filter" data-category="park">🌳 Парки</button>
+                </div>
+            </div>
+        </main>
+
+        <!-- Боттом-шит с информацией о месте -->
+        <div class="bottom-sheet">
+            <div class="bottom-sheet-handle"></div>
+            <div class="bottom-sheet-content">
+                <div class="place-info">
+                    <h3 class="place-name">Выберите место на карте</h3>
+                    <p class="place-address">Нажмите на маркер для просмотра информации</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно категорий -->
+        <div class="modal categories-modal" id="categories-modal">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Категории</h3>
+                    <button class="modal-close">&times;</button>
+                </div>
+                <div class="categories-grid">
+                    <div class="category-card" data-category="cafe">
+                        <div class="category-icon">🍴</div>
+                        <span>Кафе</span>
+                    </div>
+                    <div class="category-card" data-category="restaurant">
+                        <div class="category-icon">🍷</div>
+                        <span>Рестораны</span>
+                    </div>
+                    <div class="category-card" data-category="shop">
+                        <div class="category-icon">🛍️</div>
+                        <span>Магазины</span>
+                    </div>
+                    <div class="category-card" data-category="park">
+                        <div class="category-icon">🌳</div>
+                        <span>Парки</span>
+                    </div>
+                    <div class="category-card" data-category="hotel">
+                        <div class="category-icon">🏨</div>
+                        <span>Отели</span>
+                    </div>
+                    <div class="category-card" data-category="pharmacy">
+                        <div class="category-icon">💊</div>
+                        <span>Аптеки</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Инициализация Telegram Web App
+        const tg = window.Telegram.WebApp;
+        tg.expand();
+        tg.enableClosingConfirmation();
+
+        // Инициализация карты
+        function initMap() {
+            // Создаем карту с центром в Москве
+            const map = L.map('map', {
+                zoomControl: false,
+                attributionControl: false
+            }).setView([55.7558, 37.6173], 13);
+
+            // Добавляем слой OpenStreetMap с тёмной темой
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Кастомные маркеры для разных категорий
+            const customIcons = {
+                cafe: L.divIcon({
+                    html: '🍴',
+                    className: 'custom-marker cafe-marker',
+                    iconSize: [30, 30]
+                }),
+                restaurant: L.divIcon({
+                    html: '🍷',
+                    className: 'custom-marker restaurant-marker',
+                    iconSize: [30, 30]
+                }),
+                shop: L.divIcon({
+                    html: '🛍️',
+                    className: 'custom-marker shop-marker',
+                    iconSize: [30, 30]
+                }),
+                park: L.divIcon({
+                    html: '🌳',
+                    className: 'custom-marker park-marker',
+                    iconSize: [30, 30]
+                })
+            };
+
+            // Пример данных мест
+            const places = [
+                { lat: 55.7558, lng: 37.6176, name: "Кофейня Central", type: "cafe", address: "ул. Тверская, 1" },
+                { lat: 55.7578, lng: 37.6178, name: "Ресторан Pushkin", type: "restaurant", address: "ул. Тверская, 5" },
+                { lat: 55.7538, lng: 37.6190, name: "Торговый центр", type: "shop", address: "ул. Тверская, 10" },
+                { lat: 55.7598, lng: 37.6150, name: "Парк Горького", type: "park", address: "Крымский вал, 9" }
+            ];
+
+            // Добавляем маркеры на карту
+            places.forEach(place => {
+                const marker = L.marker([place.lat, place.lng], { 
+                    icon: customIcons[place.type] 
+                }).addTo(map);
+                
+                marker.bindPopup(`
+                    <div class="place-popup">
+                        <h4>${place.name}</h4>
+                        <p>${place.address}</p>
+                        <div class="popup-actions">
+                            <button class="popup-btn favorite">❤️</button>
+                            <button class="popup-btn route">🚶</button>
+                        </div>
+                    </div>
+                `);
+            });
+
+            // Управление элементами управления
+            document.getElementById('zoom-in').addEventListener('click', () => {
+                map.zoomIn();
+            });
+
+            document.getElementById('zoom-out').addEventListener('click', () => {
+                map.zoomOut();
+            });
+
+            document.getElementById('location').addEventListener('click', () => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((position) => {
+                        const { latitude, longitude } = position.coords;
+                        map.setView([latitude, longitude], 15);
+                    });
+                }
+            });
+
+            // Фильтрация по категориям
+            document.querySelectorAll('.category-filter').forEach(button => {
+                button.addEventListener('click', function() {
+                    document.querySelectorAll('.category-filter').forEach(btn => btn.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    const category = this.dataset.category;
+                    // Здесь будет логика фильтрации маркеров
+                });
+            });
+
+            // Поиск
+            document.getElementById('search-btn').addEventListener('click', performSearch);
+            document.getElementById('search-input').addEventListener('keypress', (e) => {
+                if (e.key === 'Enter') performSearch();
+            });
+
+            function performSearch() {
+                const query = document.getElementById('search-input').value;
+                if (query) {
+                    // Здесь будет интеграция с поисковым сервисом Nominatim
+                    console.log('Поиск:', query);
+                }
+            }
+
+            return map;
+        }
+
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            const map = initMap();
+            
+            // Анимации и взаимодействия
+            document.querySelectorAll('.nav-tab').forEach(tab => {
+                tab.addEventListener('click', function() {
+                    document.querySelectorAll('.nav-tab').forEach(t => t.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // Боттом-шит поведение
+            const bottomSheet = document.querySelector('.bottom-sheet');
+            let startY = 0;
+            let currentY = 0;
+
+            bottomSheet.addEventListener('touchstart', (e) => {
+                startY = e.touches[0].clientY;
+            });
+
+            bottomSheet.addEventListener('touchmove', (e) => {
+                currentY = e.touches[0].clientY;
+                const diff = startY - currentY;
+                if (diff > 0) {
+                    bottomSheet.style.transform = `translateY(-${diff}px)`;
+                }
+            });
+
+            bottomSheet.addEventListener('touchend', () => {
+                bottomSheet.style.transform = '';
+            });
+        });
+    </script>
+</body>
+</html>
