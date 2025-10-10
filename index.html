@@ -1,0 +1,922 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MapChap - Выгодные предложения</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #000000;
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+            touch-action: pan-x pan-y;
+        }
+
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 16px;
+            position: relative;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header-left {
+            flex: 1;
+        }
+
+        .brand {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            margin-bottom: 12px;
+        }
+
+        .brand-name {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(45deg, #fff, #e0e0e0);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .brand-subtitle {
+            font-size: 14px;
+            opacity: 0.9;
+            margin-bottom: 8px;
+        }
+
+        .user-indicator {
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 20px;
+            padding: 8px 16px;
+            font-size: 14px;
+            backdrop-filter: blur(10px);
+        }
+
+        /* Бизнес-кнопка */
+        .business-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 12px;
+            padding: 10px 16px;
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            backdrop-filter: blur(10px);
+            transition: all 0.3s ease;
+            white-space: nowrap;
+            margin-left: 10px;
+        }
+
+        .business-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: translateY(-2px);
+        }
+
+        /* Map */
+        .map-container {
+            flex: 1;
+            position: relative;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Controls */
+        .controls-container {
+            position: absolute;
+            top: 20px;
+            right: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+        }
+
+        .control-btn {
+            width: 44px;
+            height: 44px;
+            background: rgba(40, 40, 40, 0.95);
+            backdrop-filter: blur(20px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+        }
+
+        .control-btn:hover {
+            background: rgba(60, 60, 60, 0.95);
+            transform: translateY(-2px);
+        }
+
+        /* Bottom Sheet */
+        .bottom-sheet {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(30, 30, 30, 0.98);
+            backdrop-filter: blur(40px);
+            border-top-left-radius: 24px;
+            border-top-right-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            z-index: 1001;
+            transition: transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            box-shadow: 0 -10px 40px rgba(0, 0, 0, 0.5);
+        }
+
+        .bottom-sheet.collapsed {
+            transform: translateY(calc(100% - 80px));
+        }
+
+        .bottom-sheet.expanded {
+            transform: translateY(0);
+        }
+
+        .bottom-sheet-handle {
+            width: 40px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 2px;
+            margin: 12px auto;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        /* Бизнес-панель */
+        .business-panel {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: rgba(20, 20, 20, 0.98);
+            backdrop-filter: blur(50px);
+            z-index: 2000;
+            transition: left 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94);
+            overflow-y: auto;
+        }
+
+        .business-panel.active {
+            left: 0;
+        }
+
+        .business-header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .back-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: white;
+            font-size: 18px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            backdrop-filter: blur(10px);
+        }
+
+        .business-title {
+            font-size: 20px;
+            font-weight: 700;
+        }
+
+        .business-content {
+            padding: 20px;
+        }
+
+        /* Навигация бизнес-панели */
+        .business-nav {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+            padding-bottom: 15px;
+        }
+
+        .business-nav-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: none;
+            border-radius: 12px;
+            padding: 12px 20px;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            flex: 1;
+            text-align: center;
+        }
+
+        .business-nav-btn.active {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        /* Секции бизнес-панели */
+        .business-section {
+            display: none;
+        }
+
+        .business-section.active {
+            display: block;
+            animation: fadeIn 0.3s ease;
+        }
+
+        /* Мои объявления */
+        .ads-grid {
+            display: grid;
+            gap: 15px;
+        }
+
+        .ad-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .ad-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 15px;
+        }
+
+        .ad-title {
+            font-size: 18px;
+            font-weight: 600;
+            color: #ffd700;
+        }
+
+        .ad-status {
+            background: #4CAF50;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .ad-status.pending {
+            background: #FF9800;
+        }
+
+        .ad-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            margin-bottom: 15px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 24px;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        .ad-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .action-btn {
+            flex: 1;
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            border-radius: 10px;
+            padding: 10px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .action-btn.primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        /* Аналитика */
+        .analytics-overview {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .metric-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 12px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 5px;
+        }
+
+        .metric-label {
+            font-size: 12px;
+            opacity: 0.7;
+        }
+
+        /* Создание объявления */
+        .create-ad-form {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 10px;
+            padding: 12px 15px;
+            color: white;
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            background: rgba(255, 255, 255, 0.15);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            border: none;
+            border-radius: 12px;
+            padding: 15px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            margin-top: 10px;
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        /* Подтверждение ИНН */
+        .inn-verification {
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 16px;
+            padding: 20px;
+            text-align: center;
+        }
+
+        .inn-icon {
+            font-size: 48px;
+            color: #667eea;
+            margin-bottom: 20px;
+        }
+
+        .inn-description {
+            opacity: 0.8;
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        /* Анимации */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Остальные стили остаются такими же... */
+        .districts-grid, .offers-list, .custom-marker, .leaflet-container styles {
+            /* Сохраняем предыдущие стили */
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <div class="brand">
+                    <div class="brand-name">MapChap</div>
+                    <div class="user-indicator">👤 Текущий район</div>
+                </div>
+                <div class="brand-subtitle">Выгодные предложения рядом с вами</div>
+            </div>
+            <button class="business-btn" id="businessBtn">
+                <i class="fas fa-briefcase"></i> Бизнес
+            </button>
+        </div>
+
+        <!-- Map Container -->
+        <div class="map-container">
+            <div id="map"></div>
+            
+            <!-- Controls -->
+            <div class="controls-container">
+                <button class="control-btn zoom-in">+</button>
+                <button class="control-btn zoom-out">−</button>
+                <button class="control-btn location">📍</button>
+                <button class="control-btn filter">⚡</button>
+            </div>
+        </div>
+
+        <!-- Bottom Sheet -->
+        <div class="bottom-sheet expanded" id="bottomSheet">
+            <div class="bottom-sheet-handle" id="sheetHandle"></div>
+            <div class="bottom-sheet-content" id="sheetContent">
+                <h3 class="section-title">Популярные районы</h3>
+                <div class="districts-grid">
+                    <div class="district-card active" data-district="savelyovsky">
+                        <div class="district-name">Савеловский</div>
+                        <div class="district-offers">12 предложений</div>
+                    </div>
+                    <div class="district-card" data-district="maryina-roshcha">
+                        <div class="district-name">Марьина Роща</div>
+                        <div class="district-offers">8 предложений</div>
+                    </div>
+                    <div class="district-card" data-district="begovoy">
+                        <div class="district-name">Беговой</div>
+                        <div class="district-offers">15 предложений</div>
+                    </div>
+                    <div class="district-card" data-district="presnensky">
+                        <div class="district-name">Пресненский</div>
+                        <div class="district-offers">20 предложений</div>
+                    </div>
+                </div>
+
+                <h3 class="section-title">Лучшие предложения</h3>
+                <div class="offers-list">
+                    <div class="offer-card">
+                        <div class="offer-header">
+                            <div class="offer-title">Кофейня "Central"</div>
+                            <div class="offer-discount">-30%</div>
+                        </div>
+                        <div class="offer-address">Улица Новый Арбат, 15</div>
+                        <div class="offer-description">Скидка на все напитки до 18:00</div>
+                    </div>
+                    <div class="offer-card">
+                        <div class="offer-header">
+                            <div class="offer-title">Ресторан "Pushkin"</div>
+                            <div class="offer-discount">-25%</div>
+                        </div>
+                        <div class="offer-address">ул. Арбат, 25</div>
+                        <div class="offer-description">Бизнес-ланч с 12:00 до 16:00</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Бизнес-панель -->
+        <div class="business-panel" id="businessPanel">
+            <div class="business-header">
+                <button class="back-btn" id="backBtn">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h2 class="business-title">Бизнес-панель</h2>
+            </div>
+
+            <div class="business-content">
+                <!-- Навигация -->
+                <div class="business-nav">
+                    <button class="business-nav-btn active" data-section="my-ads">Мои объявления</button>
+                    <button class="business-nav-btn" data-section="analytics">Аналитика</button>
+                    <button class="business-nav-btn" data-section="create-ad">Создать объявление</button>
+                    <button class="business-nav-btn" data-section="inn-verification">ИНН</button>
+                </div>
+
+                <!-- Секция: Мои объявления -->
+                <div class="business-section active" id="my-ads">
+                    <div class="ads-grid">
+                        <div class="ad-card">
+                            <div class="ad-header">
+                                <div class="ad-title">Кофейня Central</div>
+                                <div class="ad-status">Активно</div>
+                            </div>
+                            <div class="ad-stats">
+                                <div class="stat-item">
+                                    <div class="stat-value">1,245</div>
+                                    <div class="stat-label">Просмотров</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">89</div>
+                                    <div class="stat-label">Кликов</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">7.1%</div>
+                                    <div class="stat-label">CTR</div>
+                                </div>
+                            </div>
+                            <div class="ad-actions">
+                                <button class="action-btn">Редактировать</button>
+                                <button class="action-btn primary">Статистика</button>
+                            </div>
+                        </div>
+
+                        <div class="ad-card">
+                            <div class="ad-header">
+                                <div class="ad-title">Ресторан Pushkin</div>
+                                <div class="ad-status pending">На модерации</div>
+                            </div>
+                            <div class="ad-stats">
+                                <div class="stat-item">
+                                    <div class="stat-value">-</div>
+                                    <div class="stat-label">Просмотров</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">-</div>
+                                    <div class="stat-label">Кликов</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">-</div>
+                                    <div class="stat-label">CTR</div>
+                                </div>
+                            </div>
+                            <div class="ad-actions">
+                                <button class="action-btn">Редактировать</button>
+                                <button class="action-btn">Отменить</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Секция: Аналитика -->
+                <div class="business-section" id="analytics">
+                    <div class="analytics-overview">
+                        <h3 style="margin-bottom: 20px;">Обзор эффективности</h3>
+                        <div class="metric-cards">
+                            <div class="metric-card">
+                                <div class="metric-value">2,548</div>
+                                <div class="metric-label">Всего просмотров</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">167</div>
+                                <div class="metric-label">Всего кликов</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">6.5%</div>
+                                <div class="metric-label">Общий CTR</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">₽2,340</div>
+                                <div class="metric-label">Потрачено</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Секция: Создание объявления -->
+                <div class="business-section" id="create-ad">
+                    <div class="create-ad-form">
+                        <div class="form-group">
+                            <label class="form-label">Название заведения</label>
+                            <input type="text" class="form-input" placeholder="Например: Кофейня Central">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Категория</label>
+                            <select class="form-select">
+                                <option>Кафе и рестораны</option>
+                                <option>Магазины</option>
+                                <option>Услуги</option>
+                                <option>Развлечения</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Адрес</label>
+                            <input type="text" class="form-input" placeholder="Укажите адрес">
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Описание предложения</label>
+                            <textarea class="form-textarea" placeholder="Опишите ваше специальное предложение..."></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Скидка (%)</label>
+                            <input type="number" class="form-input" placeholder="Например: 30">
+                        </div>
+                        <button class="submit-btn">Создать объявление</button>
+                    </div>
+                </div>
+
+                <!-- Секция: Подтверждение ИНН -->
+                <div class="business-section" id="inn-verification">
+                    <div class="inn-verification">
+                        <div class="inn-icon">
+                            <i class="fas fa-file-invoice"></i>
+                        </div>
+                        <h3 style="margin-bottom: 15px;">Подтверждение ИНН</h3>
+                        <p class="inn-description">
+                            Для размещения бизнес-объявлений необходимо подтвердить 
+                            ваш ИНН. Это обеспечивает безопасность и доверие 
+                            пользователей.
+                        </p>
+                        <div class="form-group">
+                            <label class="form-label">Введите ИНН</label>
+                            <input type="text" class="form-input" placeholder="12-значный номер ИНН" maxlength="12">
+                        </div>
+                        <button class="submit-btn">Подтвердить ИНН</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Инициализация Telegram Web App
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.expand();
+            tg.enableClosingConfirmation();
+        }
+
+        // Управление бизнес-панелью
+        class BusinessPanel {
+            constructor() {
+                this.panel = document.getElementById('businessPanel');
+                this.businessBtn = document.getElementById('businessBtn');
+                this.backBtn = document.getElementById('backBtn');
+                this.navButtons = document.querySelectorAll('.business-nav-btn');
+                this.sections = document.querySelectorAll('.business-section');
+                
+                this.init();
+            }
+
+            init() {
+                this.businessBtn.addEventListener('click', () => this.open());
+                this.backBtn.addEventListener('click', () => this.close());
+                
+                this.navButtons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const sectionId = btn.dataset.section;
+                        this.showSection(sectionId);
+                    });
+                });
+            }
+
+            open() {
+                this.panel.classList.add('active');
+                document.body.style.overflow = 'hidden';
+            }
+
+            close() {
+                this.panel.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            showSection(sectionId) {
+                // Обновляем активные кнопки навигации
+                this.navButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.section === sectionId) {
+                        btn.classList.add('active');
+                    }
+                });
+
+                // Показываем выбранную секцию
+                this.sections.forEach(section => {
+                    section.classList.remove('active');
+                    if (section.id === sectionId) {
+                        section.classList.add('active');
+                    }
+                });
+            }
+        }
+
+        // Управление боттом-шитом (сохраняем предыдущую логику)
+        class BottomSheet {
+            constructor() {
+                this.sheet = document.getElementById('bottomSheet');
+                this.handle = document.getElementById('sheetHandle');
+                this.isDragging = false;
+                this.startY = 0;
+                this.currentY = 0;
+                
+                this.init();
+            }
+
+            init() {
+                this.handle.addEventListener('click', () => this.toggle());
+                this.handle.addEventListener('touchstart', (e) => this.startDrag(e));
+                this.handle.addEventListener('mousedown', (e) => this.startDrag(e));
+                
+                document.addEventListener('touchmove', (e) => this.onDrag(e));
+                document.addEventListener('mousemove', (e) => this.onDrag(e));
+                
+                document.addEventListener('touchend', () => this.endDrag());
+                document.addEventListener('mouseup', () => this.endDrag());
+
+                document.getElementById('map').addEventListener('click', () => {
+                    if (this.isExpanded()) {
+                        this.collapse();
+                    }
+                });
+            }
+
+            startDrag(e) {
+                this.isDragging = true;
+                this.startY = e.type === 'touchstart' ? e.touches[0].clientY : e.clientY;
+                this.sheet.style.transition = 'none';
+            }
+
+            onDrag(e) {
+                if (!this.isDragging) return;
+                
+                e.preventDefault();
+                this.currentY = e.type === 'touchmove' ? e.touches[0].clientY : e.clientY;
+                const diff = this.startY - this.currentY;
+                
+                if (diff > 0) {
+                    this.expand();
+                } else if (diff < -50) {
+                    this.collapse();
+                }
+            }
+
+            endDrag() {
+                this.isDragging = false;
+                this.sheet.style.transition = 'transform 0.4s cubic-bezier(0.25, 0.46, 0.45, 0.94)';
+            }
+
+            toggle() {
+                if (this.isExpanded()) {
+                    this.collapse();
+                } else {
+                    this.expand();
+                }
+            }
+
+            expand() {
+                this.sheet.classList.remove('collapsed');
+                this.sheet.classList.add('expanded');
+            }
+
+            collapse() {
+                this.sheet.classList.remove('expanded');
+                this.sheet.classList.add('collapsed');
+            }
+
+            isExpanded() {
+                return this.sheet.classList.contains('expanded');
+            }
+        }
+
+        // Инициализация карты
+        function initMap() {
+            const map = L.map('map', {
+                zoomControl: false,
+                attributionControl: false
+            }).setView([55.7558, 37.6173], 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Примеры предложений
+            const offers = [
+                {
+                    lat: 55.7915, lng: 37.5884,
+                    name: "Кофейня Central",
+                    discount: "30%",
+                    address: "Улица Новый Арбат, 15",
+                    description: "Скидка на все напитки до 18:00",
+                    type: "hot"
+                },
+                {
+                    lat: 55.7480, lng: 37.5934,
+                    name: "Ресторан Pushkin", 
+                    discount: "25%",
+                    address: "ул. Арбат, 25",
+                    description: "Бизнес-ланч с 12:00 до 16:00",
+                    type: "medium"
+                }
+            ];
+
+            // Добавляем маркеры
+            offers.forEach(offer => {
+                const markerClass = `custom-marker marker-${offer.type}`;
+                const marker = L.marker([offer.lat, offer.lng], {
+                    icon: L.divIcon({
+                        html: `⚡${offer.discount}`,
+                        className: markerClass,
+                        iconSize: [40, 40]
+                    })
+                }).addTo(map);
+
+                marker.bindPopup(`
+                    <div style="min-width: 200px;">
+                        <h4 style="margin: 0 0 8px 0; color: #ffd700;">${offer.name}</h4>
+                        <p style="margin: 0 0 4px 0; font-weight: 600; color: #ff6b6b;">-${offer.discount}</p>
+                        <p style="margin: 0 0 4px 0; font-size: 14px; color: #ccc;">${offer.address}</p>
+                        <p style="margin: 0; font-size: 12px; color: #999;">${offer.description}</p>
+                    </div>
+                `);
+            });
+
+            // Управление картой
+            document.querySelector('.zoom-in').addEventListener('click', () => map.zoomIn());
+            document.querySelector('.zoom-out').addEventListener('click', () => map.zoomOut());
+            document.querySelector('.location').addEventListener('click', () => {
+                if (navigator.geolocation) {
+                    navigator.geolocation.getCurrentPosition((position) => {
+                        const { latitude, longitude } = position.coords;
+                        map.setView([latitude, longitude], 15);
+                    });
+                }
+            });
+
+            return map;
+        }
+
+        // Инициализация при загрузке
+        document.addEventListener('DOMContentLoaded', function() {
+            const map = initMap();
+            const bottomSheet = new BottomSheet();
+            const businessPanel = new BusinessPanel();
+            
+            // Переключение районов
+            document.querySelectorAll('.district-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    document.querySelectorAll('.district-card').forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+        });
+    </script>
+</body>
+  </html>
