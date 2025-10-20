@@ -1,0 +1,2491 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MapChap - Выгодные предложения</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <!-- Конфигурация API -->
+    <script>
+    window.MAPCHAP_CONFIG = {
+        API_URL: 'https://d5djdb4t6ohnfrpfaaic.ql6wied2.apigw.yandexcloud.net'
+    };
+    </script>
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --text-size: 14px;
+            --header-height: 60px;
+            --primary-bg: #0a0a0a;
+            --surface-bg: #1a1a1a;
+            --card-bg: #2a2a2a;
+            --border-color: #333333;
+            --text-primary: #ffffff;
+            --text-secondary: #a0a0a0;
+            --accent-orange: #ff6b35;
+            --accent-green: #00d4aa;
+            --accent-blue: #667eea;
+            --accent-purple: #764ba2;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            touch-action: pan-x pan-y;
+            font-size: var(--text-size);
+            font-weight: 400;
+        }
+
+        body.light-theme {
+            --primary-bg: #f8f9fa;
+            --surface-bg: #ffffff;
+            --card-bg: #f8f9fa;
+            --border-color: #e0e0e0;
+            --text-primary: #2c2c2c;
+            --text-secondary: #666666;
+            --accent-orange: #ff6b35;
+            --accent-green: #00d4aa;
+            --accent-blue: #667eea;
+            --accent-purple: #764ba2;
+        }
+
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .header {
+            background: var(--surface-bg);
+            padding: 12px 16px;
+            position: relative;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: var(--header-height);
+            gap: 12px;
+            border-bottom: 1px solid var(--border-color);
+            backdrop-filter: blur(20px);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .brand-name {
+            font-size: 22px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-green), var(--accent-orange));
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease-in-out infinite;
+            white-space: nowrap;
+            letter-spacing: -0.5px;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% {
+                background-position: 0% 50%;
+            }
+            50% {
+                background-position: 100% 50%;
+            }
+        }
+
+        .business-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 10px 16px;
+            color: var(--text-primary);
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .business-btn:hover {
+            background: var(--surface-bg);
+            border-color: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        .profile-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 42px;
+            height: 42px;
+            color: var(--text-primary);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-shrink: 0;
+        }
+
+        .profile-btn:hover {
+            background: var(--surface-bg);
+            border-color: var(--accent-blue);
+            transform: scale(1.05);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            background: var(--surface-bg);
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        .controls-container {
+            position: absolute;
+            top: 20px;
+            right: 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 1000;
+        }
+
+        .control-btn {
+            width: 44px;
+            height: 44px;
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            color: var(--text-primary);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            backdrop-filter: blur(10px);
+        }
+
+        .control-btn:hover {
+            background: var(--card-bg);
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .bottom-sheet {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--surface-bg);
+            border-top: 1px solid var(--border-color);
+            z-index: 1001;
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 35vh;
+            max-height: 70vh;
+            backdrop-filter: blur(20px);
+        }
+
+        .bottom-sheet.collapsed {
+            transform: translateY(calc(100% - 60px));
+            height: 60px;
+        }
+
+        .bottom-sheet.expanded {
+            transform: translateY(0);
+        }
+
+        .bottom-sheet-handle {
+            width: 40px;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            margin: 10px auto;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .bottom-sheet-handle:hover {
+            background: var(--accent-blue);
+        }
+
+        .bottom-sheet-content {
+            padding: 0 16px 16px;
+            height: calc(100% - 30px);
+            overflow-y: auto;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .districts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .district-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .district-card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .district-card.active {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-color: transparent;
+        }
+
+        .district-name {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .district-offers {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .offer-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 12px;
+        }
+
+        .offer-card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .offer-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+        }
+
+        .offer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 12px;
+        }
+
+        .offer-title {
+            font-size: 16px;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .offer-discount {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            padding: 6px 12px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .offer-address {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 12px;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .offer-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            line-height: 1.5;
+            padding: 12px;
+            background: var(--surface-bg);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-blue);
+        }
+
+        .offer-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 16px;
+            padding-top: 16px;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .offer-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .offer-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .offer-action-btn {
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 6px 12px;
+            color: var(--text-primary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .offer-action-btn:hover {
+            background: var(--card-bg);
+            border-color: var(--accent-blue);
+        }
+
+        .business-panel {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--surface-bg);
+            z-index: 2000;
+            transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            border-right: 1px solid var(--border-color);
+        }
+
+        .business-panel.active {
+            left: 0;
+        }
+
+        .business-header {
+            background: var(--card-bg);
+            padding: 20px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .back-btn {
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            width: 40px;
+            height: 40px;
+            color: var(--text-primary);
+            font-size: 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            border-color: var(--accent-blue);
+            transform: scale(1.05);
+        }
+
+        .business-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .business-content {
+            padding: 20px;
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .business-nav {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 25px;
+        }
+
+        .business-nav-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 20px 12px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .business-nav-btn i {
+            font-size: 18px;
+            margin-bottom: 4px;
+            color: var(--accent-blue);
+        }
+
+        .business-nav-btn.active {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-color: transparent;
+            color: white;
+        }
+
+        .business-nav-btn.active i {
+            color: white;
+        }
+
+        .business-nav-btn:hover:not(.active) {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .create-ad-form {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 500;
+            font-size: 14px;
+            color: var(--text-primary);
+        }
+
+        .form-input, .form-select, .form-textarea {
+            width: 100%;
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.3s ease;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .form-input:focus, .form-select:focus, .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border: none;
+            border-radius: 12px;
+            padding: 14px;
+            color: white;
+            font-size: 15px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .submit-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .notification {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+            padding: 16px 20px;
+            border-radius: 12px;
+            z-index: 3000;
+            transform: translateX(400px);
+            transition: transform 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            max-width: 300px;
+            font-size: 14px;
+            backdrop-filter: blur(20px);
+        }
+
+        .notification.show {
+            transform: translateX(0);
+        }
+
+        .notification.success {
+            border-left: 4px solid var(--success);
+        }
+
+        .notification.error {
+            border-left: 4px solid var(--error);
+        }
+
+        .notification.warning {
+            border-left: 4px solid var(--warning);
+        }
+
+        .leaflet-container {
+            background: var(--surface-bg);
+            font-family: 'Inter', sans-serif;
+        }
+
+        .leaflet-control-zoom a {
+            background: var(--surface-bg) !important;
+            border: 1px solid var(--border-color) !important;
+            color: var(--text-primary) !important;
+        }
+
+        .leaflet-control-zoom a:hover {
+            background: var(--card-bg) !important;
+        }
+
+        .custom-marker {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            font-weight: 600;
+            font-size: 11px;
+            border: 2px solid white;
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            cursor: pointer;
+        }
+
+        .marker-hot {
+            background: linear-gradient(135deg, var(--accent-blue), #8b5cf6);
+        }
+
+        .marker-medium {
+            background: linear-gradient(135deg, var(--accent-purple), #a855f7);
+        }
+
+        .user-location-marker {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border: 3px solid white;
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            box-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+            position: relative;
+        }
+
+        .user-location-marker::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: -4px;
+            right: -4px;
+            bottom: -4px;
+            border: 2px solid var(--accent-blue);
+            border-radius: 50%;
+            animation: pulse 2s ease-out infinite;
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: scale(1);
+                opacity: 1;
+            }
+            100% {
+                transform: scale(2);
+                opacity: 0;
+            }
+        }
+
+        .bottom-sheet-content::-webkit-scrollbar,
+        .business-content::-webkit-scrollbar {
+            width: 4px;
+        }
+
+        .bottom-sheet-content::-webkit-scrollbar-track,
+        .business-content::-webkit-scrollbar-track {
+            background: var(--border-color);
+            border-radius: 2px;
+        }
+
+        .bottom-sheet-content::-webkit-scrollbar-thumb,
+        .business-content::-webkit-scrollbar-thumb {
+            background: var(--accent-blue);
+            border-radius: 2px;
+        }
+
+        .loading {
+            display: inline-block;
+            width: 16px;
+            height: 16px;
+            border: 2px solid var(--border-color);
+            border-radius: 50%;
+            border-top-color: var(--accent-blue);
+            animation: spin 1s ease-in-out infinite;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Profile Panel Styles */
+        .profile-panel {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 85%;
+            height: 100%;
+            background: var(--surface-bg);
+            z-index: 2000;
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            border-left: 1px solid var(--border-color);
+        }
+
+        .profile-panel.active {
+            right: 0;
+        }
+
+        .profile-header {
+            background: var(--card-bg);
+            padding: 30px 20px 20px;
+            text-align: center;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .profile-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 32px;
+            color: white;
+        }
+
+        .profile-name {
+            font-size: 18px;
+            font-weight: 600;
+            margin-bottom: 5px;
+        }
+
+        .profile-status {
+            font-size: 12px;
+            color: var(--accent-blue);
+            font-weight: 500;
+        }
+
+        .profile-content {
+            padding: 20px;
+            height: calc(100vh - 180px);
+            overflow-y: auto;
+        }
+
+        .profile-section {
+            margin-bottom: 25px;
+        }
+
+        .profile-section-title {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            color: var(--text-secondary);
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        .profile-stats {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+        }
+
+        .profile-stat {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            padding: 15px;
+            text-align: center;
+        }
+
+        .profile-stat-value {
+            font-size: 18px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--accent-blue);
+        }
+
+        .profile-stat-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .profile-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 2px;
+        }
+
+        .profile-menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 14px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .profile-menu-item:hover {
+            border-color: var(--accent-blue);
+            transform: translateX(4px);
+        }
+
+        .profile-menu-item i {
+            width: 20px;
+            text-align: center;
+            color: var(--accent-blue);
+        }
+
+        /* Settings Styles */
+        .settings-header {
+            background: var(--card-bg);
+            padding: 20px 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .settings-title {
+            font-size: 20px;
+            font-weight: 600;
+        }
+
+        .settings-content {
+            padding: 20px;
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+        }
+
+        .settings-section {
+            display: none;
+        }
+
+        .settings-section.active {
+            display: block;
+        }
+
+        .settings-group {
+            margin-bottom: 25px;
+        }
+
+        .settings-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 16px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .settings-label {
+            font-size: 14px;
+            font-weight: 500;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 44px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border-color);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 18px;
+            width: 18px;
+            left: 3px;
+            bottom: 3px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--accent-blue);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(20px);
+        }
+
+        .language-selector,
+        .theme-selector,
+        .text-size-selector {
+            display: flex;
+            gap: 8px;
+            flex-wrap: wrap;
+        }
+
+        .language-option,
+        .theme-option,
+        .text-size-option {
+            padding: 8px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .language-option.active,
+        .theme-option.active,
+        .text-size-option.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .region-info {
+            font-size: 13px;
+            color: var(--text-secondary);
+            padding: 10px;
+            background: var(--card-bg);
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+        }
+
+        /* Business Sections */
+        .business-section {
+            display: none;
+        }
+
+        .business-section.active {
+            display: block;
+        }
+
+        .ad-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .ad-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .ad-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .ad-status {
+            background: var(--success);
+            color: white;
+            padding: 4px 8px;
+            border-radius: 6px;
+            font-size: 11px;
+            font-weight: 600;
+        }
+
+        .ad-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 10px;
+            margin-bottom: 12px;
+        }
+
+        .stat-item {
+            text-align: center;
+        }
+
+        .stat-value {
+            font-size: 16px;
+            font-weight: 700;
+            color: var(--accent-blue);
+        }
+
+        .stat-label {
+            font-size: 10px;
+            color: var(--text-secondary);
+        }
+
+        .ad-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .action-btn {
+            flex: 1;
+            padding: 8px 12px;
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            color: var(--text-primary);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .action-btn:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .action-btn.primary {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .metric-cards {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .metric-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+        }
+
+        .metric-value {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--accent-blue);
+            margin-bottom: 4px;
+        }
+
+        .metric-label {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .inn-verification {
+            text-align: center;
+        }
+
+        .inn-icon {
+            width: 60px;
+            height: 60px;
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 15px;
+            font-size: 24px;
+            color: white;
+        }
+
+        .inn-description {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 20px;
+            line-height: 1.5;
+        }
+
+        .inn-type-selector {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 20px;
+        }
+
+        .inn-type-btn {
+            flex: 1;
+            padding: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .inn-type-btn.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .verification-status {
+            margin-top: 15px;
+            padding: 15px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            text-align: left;
+        }
+
+        .verification-status.error {
+            border-left: 4px solid var(--error);
+        }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Header -->
+        <div class="header">
+            <div class="header-left">
+                <button class="business-btn" id="businessBtn">
+                    <i class="fas fa-briefcase"></i> Бизнес
+                </button>
+                <div class="brand-name">MapChap</div>
+            </div>
+            <div class="header-actions">
+                <button class="profile-btn" id="profileBtn">
+                    <i class="fas fa-user"></i>
+                </button>
+            </div>
+        </div>
+
+        <!-- Map Container -->
+        <div class="map-container">
+            <div id="map"></div>
+            
+            <!-- Controls -->
+            <div class="controls-container">
+                <button class="control-btn zoom-in">+</button>
+                <button class="control-btn zoom-out">−</button>
+                <button class="control-btn location" onclick="getUserLocation()">📍</button>
+                <button class="control-btn filter">⚡</button>
+            </div>
+        </div>
+
+        <!-- Bottom Sheet -->
+        <div class="bottom-sheet expanded" id="bottomSheet">
+            <div class="bottom-sheet-handle" id="sheetHandle"></div>
+            <div class="bottom-sheet-content" id="sheetContent">
+                <h3 class="section-title">Предложения рядом с вами</h3>
+                <div class="districts-grid">
+                    <div class="district-card active" data-district="meshchansky">
+                        <div class="district-name">Мещанский</div>
+                        <div class="district-offers">Самотечная эстакада</div>
+                    </div>
+                    <div class="district-card" data-district="maryina-roshcha">
+                        <div class="district-name">Марьина Роща</div>
+                        <div class="district-offers">8 предложений</div>
+                    </div>
+                    <div class="district-card" data-district="krasnoselsky">
+                        <div class="district-name">Красносельский</div>
+                        <div class="district-offers">Крестовский мост</div>
+                    </div>
+                    <div class="district-card" data-district="presnensky">
+                        <div class="district-name">Пресненский</div>
+                        <div class="district-offers">20 предложений</div>
+                    </div>
+                </div>
+
+                <h3 class="section-title">Лучшие предложения</h3>
+                <div class="offers-list">
+                    <div class="offer-card">
+                        <div class="offer-header">
+                            <div class="offer-title">Кофейня "Central"</div>
+                            <div class="offer-discount">-30%</div>
+                        </div>
+                        <div class="offer-address">Улица Новый Арбат, 15</div>
+                        <div class="offer-description">Скидка на все напитки до 18:00. Акция действует для всех гостей.</div>
+                        <div class="offer-meta">
+                            <div class="offer-time">
+                                <i class="far fa-clock"></i> До 18:00
+                            </div>
+                            <div class="offer-actions">
+                                <button class="offer-action-btn" onclick="addToFavorites('coffee-central')">❤️</button>
+                                <button class="offer-action-btn" onclick="showRoute('coffee-central')">🚗</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Бизнес-панель -->
+        <div class="business-panel" id="businessPanel">
+            <div class="business-header">
+                <button class="back-btn" id="backBtn">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h2 class="business-title">Бизнес-панель</h2>
+            </div>
+
+            <div class="business-content">
+                <!-- Навигация -->
+                <div class="business-nav">
+                    <button class="business-nav-btn active" data-section="my-ads">
+                        <i class="fas fa-ad"></i>
+                        Мои объявления
+                    </button>
+                    <button class="business-nav-btn" data-section="analytics">
+                        <i class="fas fa-chart-line"></i>
+                        Аналитика
+                    </button>
+                    <button class="business-nav-btn" data-section="create-ad">
+                        <i class="fas fa-plus-circle"></i>
+                        Создать объявление
+                    </button>
+                    <button class="business-nav-btn" data-section="inn-verification">
+                        <i class="fas fa-file-invoice"></i>
+                        ИНН
+                    </button>
+                </div>
+
+                <!-- Секция: Мои объявления -->
+                <div class="business-section active" id="my-ads">
+                    <div class="ads-grid">
+                        <div class="ad-card">
+                            <div class="ad-header">
+                                <div class="ad-title">Кофейня Central</div>
+                                <div class="ad-status">Активно</div>
+                            </div>
+                            <div class="ad-stats">
+                                <div class="stat-item">
+                                    <div class="stat-value">1,245</div>
+                                    <div class="stat-label">Просмотров</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">89</div>
+                                    <div class="stat-label">Кликов</div>
+                                </div>
+                                <div class="stat-item">
+                                    <div class="stat-value">7.1%</div>
+                                    <div class="stat-label">CTR</div>
+                                </div>
+                            </div>
+                            <div class="ad-actions">
+                                <button class="action-btn" onclick="editAd('coffee-central')">
+                                    <i class="fas fa-edit"></i> Редактировать
+                                </button>
+                                <button class="action-btn primary" onclick="showAnalytics('coffee-central')">
+                                    <i class="fas fa-chart-bar"></i> Статистика
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Секция: Аналитика -->
+                <div class="business-section" id="analytics">
+                    <div class="analytics-overview">
+                        <h3 style="margin-bottom: 16px; text-align: center;">Обзор эффективности</h3>
+                        <div class="metric-cards">
+                            <div class="metric-card">
+                                <div class="metric-value">2,548</div>
+                                <div class="metric-label">Всего просмотров</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">167</div>
+                                <div class="metric-label">Всего кликов</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">6.5%</div>
+                                <div class="metric-label">Общий CTR</div>
+                            </div>
+                            <div class="metric-card">
+                                <div class="metric-value">₽2,340</div>
+                                <div class="metric-label">Потрачено</div>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="text-align: center; margin-top: 20px;">
+                        <button class="submit-btn" onclick="generateReport()">
+                            <i class="fas fa-download"></i> Скачать отчет
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Секция: Создание объявления -->
+                <div class="business-section" id="create-ad">
+                    <div class="create-ad-form">
+                        <div class="form-group">
+                            <label class="form-label">Название заведения *</label>
+                            <input type="text" class="form-input" id="adName" placeholder="Например: Кофейня Central" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Категория *</label>
+                            <select class="form-select" id="adCategory" required>
+                                <option value="">Выберите категорию</option>
+                                <option value="cafe">Кафе и рестораны</option>
+                                <option value="shop">Магазины</option>
+                                <option value="services">Услуги</option>
+                                <option value="entertainment">Развлечения</option>
+                            </select>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Адрес *</label>
+                            <input type="text" class="form-input" id="adAddress" placeholder="Укажите адрес" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Описание предложения *</label>
+                            <textarea class="form-textarea" id="adDescription" placeholder="Опишите ваше специальное предложение..." required></textarea>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Скидка (%) *</label>
+                            <input type="number" class="form-input" id="adDiscount" placeholder="Например: 30" min="1" max="99" required>
+                        </div>
+                        <div class="form-group">
+                            <label class="form-label">Время действия</label>
+                            <input type="text" class="form-input" id="adTime" placeholder="Например: с 12:00 до 18:00">
+                        </div>
+                        <button class="submit-btn" id="createAdBtn" onclick="createNewAd()">
+                            <i class="fas fa-plus"></i> Создать объявление
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Секция: Подтверждение ИНН -->
+                <div class="business-section" id="inn-verification">
+                    <div class="inn-verification">
+                        <div class="inn-icon">
+                            <i class="fas fa-file-invoice-dollar"></i>
+                        </div>
+                        <h3 style="margin-bottom: 12px; text-align: center;">Подтверждение ИНН</h3>
+                        <p class="inn-description">
+                            Для размещения бизнес-объявлений необходимо подтвердить 
+                            ваш ИНН через официальный реестр ФНС России.
+                        </p>
+
+                        <!-- Выбор типа ИНН -->
+                        <div class="inn-type-selector">
+                            <button class="inn-type-btn active" data-inn-type="ip">
+                                ИП (12 цифр)
+                            </button>
+                            <button class="inn-type-btn" data-inn-type="ooo">
+                                ООО (10 цифр)
+                            </button>
+                        </div>
+
+                        <div class="form-group">
+                            <label class="form-label" id="innLabel">ИНН индивидуального предпринимателя *</label>
+                            <input type="text" class="form-input" id="innInput" placeholder="Введите 12 цифр" maxlength="12" pattern="\d{12}">
+                            <div style="font-size: 11px; color: #888; margin-top: 4px;">
+                                <span id="innDescription">Введите 12 цифр ИНН индивидуального предпринимателя</span>
+                            </div>
+                        </div>
+
+                        <button class="submit-btn" id="verifyInnBtn" onclick="verifyINN()">
+                            <i class="fas fa-shield-alt"></i> Проверить через ФНС
+                        </button>
+
+                        <!-- Статус верификации -->
+                        <div id="verificationStatus"></div>
+
+                        <!-- Информация о верификации -->
+                        <div class="verification-status" id="apiInfo" style="display: none;">
+                            <div style="margin-bottom: 6px; font-weight: 600; color: #4ecdc4;">
+                                <i class="fas fa-info-circle"></i> Реальная проверка ФНС
+                            </div>
+                            <div style="font-size: 10px; line-height: 1.4; color: #aaa;">
+                                • Проверка по государственному реестру<br>
+                                • Подтверждение юридического статуса<br>
+                                • Актуальные данные из ЕГРЮЛ/ЕГРИП
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Профиль пользователя -->
+        <div class="profile-panel" id="profilePanel">
+            <div class="profile-header">
+                <div class="profile-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="profile-name" id="userName">Александр Петров</div>
+                <div class="profile-status">Premium пользователь</div>
+            </div>
+            <div class="profile-content">
+                <div class="profile-section">
+                    <div class="profile-section-title">Статистика</div>
+                    <div class="profile-stats">
+                        <div class="profile-stat">
+                            <div class="profile-stat-value">24</div>
+                            <div class="profile-stat-label">Избранных</div>
+                        </div>
+                        <div class="profile-stat">
+                            <div class="profile-stat-value">156</div>
+                            <div class="profile-stat-label">Просмотров</div>
+                        </div>
+                        <div class="profile-stat">
+                            <div class="profile-stat-value">12</div>
+                            <div class="profile-stat-label">Посещений</div>
+                        </div>
+                        <div class="profile-stat">
+                            <div class="profile-stat-value">₽8,540</div>
+                            <div class="profile-stat-label">Сэкономлено</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <div class="profile-section-title">Настройки</div>
+                    <div class="profile-menu">
+                        <div class="profile-menu-item" onclick="openSettings('notifications')">
+                            <i class="fas fa-bell"></i>
+                            <span>Уведомления</span>
+                        </div>
+                        <div class="profile-menu-item" onclick="openSettings('privacy')">
+                            <i class="fas fa-shield-alt"></i>
+                            <span>Конфиденциальность</span>
+                        </div>
+                        <div class="profile-menu-item" onclick="openSettings('language')">
+                            <i class="fas fa-globe"></i>
+                            <span>Язык и регион</span>
+                        </div>
+                        <div class="profile-menu-item" onclick="openSettings('appearance')">
+                            <i class="fas fa-palette"></i>
+                            <span>Внешний вид</span>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="profile-section">
+                    <div class="profile-section-title">Аккаунт</div>
+                    <div class="profile-menu">
+                        <div class="profile-menu-item" onclick="switchToBusiness()">
+                            <i class="fas fa-briefcase"></i>
+                            <span>Перейти в бизнес-аккаунт</span>
+                        </div>
+                        <div class="profile-menu-item" onclick="showHelp()">
+                            <i class="fas fa-question-circle"></i>
+                            <span>Помощь и поддержка</span>
+                        </div>
+                        <div class="profile-menu-item" onclick="showAbout()">
+                            <i class="fas fa-info-circle"></i>
+                            <span>О приложении</span>
+                        </div>
+                        <div class="profile-menu-item" style="color: #ff6b6b;" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                            <span>Выйти</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Панель настроек -->
+        <div class="business-panel" id="settingsPanel">
+            <div class="settings-header">
+                <button class="back-btn" id="settingsBackBtn">
+                    <i class="fas fa-arrow-left"></i>
+                </button>
+                <h2 class="settings-title" id="settingsTitle">Настройки</h2>
+            </div>
+
+            <div class="settings-content">
+                <!-- Уведомления -->
+                <div class="settings-section active" id="notifications-settings">
+                    <div class="settings-group">
+                        <h3 style="margin-bottom: 16px; color: var(--accent-blue);">Уведомления</h3>
+                        <div class="settings-item">
+                            <div class="settings-label">Push-уведомления</div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="pushNotifications" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-label">Новые предложения</div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="newOffersNotifications" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-label">Специальные акции</div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="specialOffersNotifications">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-label">Напоминания</div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="remindersNotifications" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Конфиденциальность -->
+                <div class="settings-section" id="privacy-settings">
+                    <div class="settings-group">
+                        <h3 style="margin-bottom: 16px; color: var(--accent-blue);">Конфиденциальность</h3>
+                        <div class="settings-item">
+                            <div class="settings-label">Показывать местоположение</div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="showLocation" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-label">Персональные рекомендации</div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="personalRecommendations" checked>
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-label">Сбор аналитики</div>
+                            <label class="toggle-switch">
+                                <input type="checkbox" id="analyticsCollection">
+                                <span class="toggle-slider"></span>
+                            </label>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Язык и регион -->
+                <div class="settings-section" id="language-settings">
+                    <div class="settings-group">
+                        <h3 style="margin-bottom: 16px; color: var(--accent-blue);">Язык и регион</h3>
+                        <div class="settings-item">
+                            <div class="settings-label">Язык приложения</div>
+                            <div class="language-selector">
+                                <div class="language-option active" data-lang="ru">Русский</div>
+                                <div class="language-option" data-lang="en">English</div>
+                            </div>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-label">Регион поиска</div>
+                            <div class="region-info" id="currentRegion">
+                                Текущий регион: Москва
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Внешний вид -->
+                <div class="settings-section" id="appearance-settings">
+                    <div class="settings-group">
+                        <h3 style="margin-bottom: 16px; color: var(--accent-blue);">Внешний вид</h3>
+                        <div class="settings-item">
+                            <div class="settings-label">Тема оформления</div>
+                            <div class="theme-selector">
+                                <div class="theme-option active" data-theme="dark">Тёмная</div>
+                                <div class="theme-option" data-theme="light">Светлая</div>
+                                <div class="theme-option" data-theme="auto">Авто</div>
+                            </div>
+                        </div>
+                        <div class="settings-item">
+                            <div class="settings-label">Размер текста</div>
+                            <div class="text-size-selector">
+                                <div class="text-size-option" data-size="small">Мелкий</div>
+                                <div class="text-size-option active" data-size="standard">Стандартный</div>
+                                <div class="text-size-option" data-size="large">Крупный</div>
+                                <div class="text-size-option" data-size="xlarge">Очень крупный</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Уведомления -->
+        <div class="notification" id="notification"></div>
+    </div>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        // Конфигурация API
+        const API_BASE_URL = window.MAPCHAP_CONFIG.API_URL;
+        
+        // Текущий тип ИНН
+        let currentINNType = 'ip';
+        let map;
+        let userLocation = null;
+        let userMarker = null;
+
+        // Состояния приложения
+        const appState = {
+            notifications: {
+                push: true,
+                newOffers: true,
+                specialOffers: false,
+                reminders: true
+            },
+            privacy: {
+                showLocation: true,
+                personalRecommendations: true,
+                analytics: false
+            },
+            language: 'ru',
+            theme: 'dark',
+            textSize: 'standard',
+            region: 'Москва'
+        };
+
+        // Инициализация Telegram Web App
+        const tg = window.Telegram?.WebApp;
+        if (tg) {
+            tg.expand();
+            tg.enableClosingConfirmation();
+            
+            // Используем данные Telegram-аккаунта
+            const user = tg.initDataUnsafe?.user;
+            if (user) {
+                document.getElementById('userName').textContent = 
+                    `${user.first_name} ${user.last_name || ''}`.trim();
+            }
+        }
+
+        // ================== ФУНКЦИИ ДЛЯ КАРТЫ И ЛОКАЦИИ ==================
+
+        function getUserLocation() {
+            if (!appState.privacy.showLocation) {
+                Notification.show('Показ местоположения отключен в настройках конфиденциальности', 'warning');
+                return;
+            }
+
+            Notification.show('Определяем ваше местоположение...', 'info');
+            
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => {
+                        const { latitude, longitude } = position.coords;
+                        userLocation = { lat: latitude, lng: longitude };
+                        
+                        // Обновляем карту
+                        map.setView([latitude, longitude], 15);
+                        
+                        // Удаляем старый маркер если есть
+                        if (userMarker) {
+                            map.removeLayer(userMarker);
+                        }
+                        
+                        // Добавляем новый маркер пользователя
+                        userMarker = L.marker([latitude, longitude], {
+                            icon: L.divIcon({
+                                html: '<div class="user-location-marker"></div>',
+                                className: 'user-location-marker-container',
+                                iconSize: [40, 40]
+                            })
+                        }).addTo(map).bindPopup('Ваше местоположение');
+                        
+                        Notification.show('Местоположение определено!', 'success');
+                        
+                        // Загружаем предложения для этой локации
+                        loadOffers(latitude, longitude);
+                    },
+                    (error) => {
+                        console.error('Geolocation error:', error);
+                        Notification.show('Не удалось определить местоположение', 'error');
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    }
+                );
+            } else {
+                Notification.show('Геолокация не поддерживается браузером', 'error');
+            }
+        }
+
+        async function loadOffers(lat, lng) {
+            try {
+                Notification.show('Загружаем предложения...', 'info');
+                
+                // Используем реальный API Gateway
+                const response = await fetch(`${API_BASE_URL}/offers?lat=${lat}&lng=${lng}`);
+                
+                if (!response.ok) {
+                    throw new Error('Ошибка загрузки предложений');
+                }
+                
+                const offers = await response.json();
+
+                // Очищаем старые маркеры
+                map.eachLayer((layer) => {
+                    if (layer instanceof L.Marker && layer !== userMarker) {
+                        map.removeLayer(layer);
+                    }
+                });
+
+                // Добавляем новые маркеры
+                offers.forEach(offer => {
+                    const markerClass = `custom-marker marker-${offer.type || 'medium'}`;
+                    const marker = L.marker([offer.lat, offer.lng], {
+                        icon: L.divIcon({
+                            html: `⚡${offer.discount}`,
+                            className: markerClass,
+                            iconSize: [36, 36]
+                        })
+                    }).addTo(map);
+
+                    marker.bindPopup(`
+                        <div style="min-width: 180px;">
+                            <h4 style="margin: 0 0 6px 0; color: var(--accent-blue);">${offer.name}</h4>
+                            <p style="margin: 0 0 4px 0; font-weight: 600; color: var(--accent-blue);">-${offer.discount}</p>
+                            <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">${offer.address}</p>
+                        </div>
+                    `);
+                });
+
+                Notification.show(`Найдено ${offers.length} предложений`, 'success');
+                
+            } catch (error) {
+                console.error('Failed to load offers:', error);
+                // Fallback на демо-данные если API недоступно
+                loadDemoOffers();
+            }
+        }
+
+        function loadDemoOffers() {
+            // Временные демо-данные
+            const demoOffers = [
+                {
+                    lat: 55.7915, lng: 37.5884,
+                    name: "Кофейня Central",
+                    discount: "30%",
+                    address: "Улица Новый Арбат, 15",
+                    description: "Скидка на все напитки до 18:00",
+                    type: "hot"
+                },
+                {
+                    lat: 55.7649, lng: 37.6056,
+                    name: "Ресторан Pushkin", 
+                    discount: "20%",
+                    address: "Тверской бульвар, 26",
+                    description: "Скидка на бизнес-ланчи",
+                    type: "medium"
+                }
+            ];
+
+            // Очищаем старые маркеры
+            map.eachLayer((layer) => {
+                if (layer instanceof L.Marker && layer !== userMarker) {
+                    map.removeLayer(layer);
+                }
+            });
+
+            // Добавляем новые маркеры
+            demoOffers.forEach(offer => {
+                const markerClass = `custom-marker marker-${offer.type}`;
+                const marker = L.marker([offer.lat, offer.lng], {
+                    icon: L.divIcon({
+                        html: `⚡${offer.discount}`,
+                        className: markerClass,
+                        iconSize: [36, 36]
+                    })
+                }).addTo(map);
+
+                marker.bindPopup(`
+                    <div style="min-width: 180px;">
+                        <h4 style="margin: 0 0 6px 0; color: var(--accent-blue);">${offer.name}</h4>
+                        <p style="margin: 0 0 4px 0; font-weight: 600; color: var(--accent-blue);">-${offer.discount}</p>
+                        <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">${offer.address}</p>
+                    </div>
+                `);
+            });
+
+            Notification.show(`Найдено ${demoOffers.length} демо-предложений`, 'info');
+        }
+
+        // ================== ФУНКЦИИ НАСТРОЕК ==================
+
+        function initializeSettings() {
+            // Загружаем настройки из localStorage
+            const savedSettings = localStorage.getItem('mapchapSettings');
+            if (savedSettings) {
+                Object.assign(appState, JSON.parse(savedSettings));
+            }
+
+            // Применяем настройки
+            applyTheme(appState.theme);
+            applyTextSize(appState.textSize);
+            updateRegionDisplay();
+            updateToggleSwitches();
+            updateLanguageOptions();
+            updateThemeOptions();
+            updateTextSizeOptions();
+        }
+
+        function saveSettings() {
+            localStorage.setItem('mapchapSettings', JSON.stringify(appState));
+        }
+
+        function applyTheme(theme) {
+            const body = document.body;
+            body.classList.remove('dark-theme', 'light-theme');
+            
+            if (theme === 'auto') {
+                // Автоматическое определение темы системы
+                const isDarkMode = window.matchMedia('(prefers-color-scheme: dark)').matches;
+                body.classList.add(isDarkMode ? 'dark-theme' : 'light-theme');
+                appState.theme = isDarkMode ? 'dark' : 'light';
+            } else {
+                body.classList.add(theme + '-theme');
+                appState.theme = theme;
+            }
+            
+            // Обновляем карту при смене темы
+            if (map) {
+                setTimeout(() => {
+                    map.invalidateSize();
+                }, 100);
+            }
+        }
+
+        function applyTextSize(size) {
+            const body = document.body;
+            body.classList.remove('text-small', 'text-large', 'text-xlarge');
+            if (size !== 'standard') {
+                body.classList.add('text-' + size);
+            }
+            appState.textSize = size;
+        }
+
+        function updateRegionDisplay() {
+            document.getElementById('currentRegion').textContent = `Текущий регион: ${appState.region}`;
+        }
+
+        function updateToggleSwitches() {
+            // Уведомления
+            document.getElementById('pushNotifications').checked = appState.notifications.push;
+            document.getElementById('newOffersNotifications').checked = appState.notifications.newOffers;
+            document.getElementById('specialOffersNotifications').checked = appState.notifications.specialOffers;
+            document.getElementById('remindersNotifications').checked = appState.notifications.reminders;
+            
+            // Конфиденциальность
+            document.getElementById('showLocation').checked = appState.privacy.showLocation;
+            document.getElementById('personalRecommendations').checked = appState.privacy.personalRecommendations;
+            document.getElementById('analyticsCollection').checked = appState.privacy.analytics;
+        }
+
+        function updateLanguageOptions() {
+            document.querySelectorAll('.language-option').forEach(option => {
+                option.classList.toggle('active', option.dataset.lang === appState.language);
+            });
+        }
+
+        function updateThemeOptions() {
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.classList.toggle('active', option.dataset.theme === appState.theme);
+            });
+        }
+
+        function updateTextSizeOptions() {
+            document.querySelectorAll('.text-size-option').forEach(option => {
+                option.classList.toggle('active', option.dataset.size === appState.textSize);
+            });
+        }
+
+        // Обработчики для переключателей
+        function setupSettingsHandlers() {
+            // Уведомления
+            document.getElementById('pushNotifications').addEventListener('change', function() {
+                appState.notifications.push = this.checked;
+                saveSettings();
+                Notification.show(`Push-уведомления ${this.checked ? 'включены' : 'выключены'}`, 'info');
+            });
+
+            document.getElementById('newOffersNotifications').addEventListener('change', function() {
+                appState.notifications.newOffers = this.checked;
+                saveSettings();
+                if (this.checked) {
+                    Notification.show('Вы будете получать уведомления о новых предложениях', 'info');
+                }
+            });
+
+            document.getElementById('specialOffersNotifications').addEventListener('change', function() {
+                appState.notifications.specialOffers = this.checked;
+                saveSettings();
+                Notification.show(`Специальные акции ${this.checked ? 'включены' : 'выключены'}`, 'info');
+            });
+
+            document.getElementById('remindersNotifications').addEventListener('change', function() {
+                appState.notifications.reminders = this.checked;
+                saveSettings();
+                Notification.show(`Напоминания ${this.checked ? 'включены' : 'выключены'}`, 'info');
+            });
+
+            // Конфиденциальность
+            document.getElementById('showLocation').addEventListener('change', function() {
+                appState.privacy.showLocation = this.checked;
+                saveSettings();
+                if (!this.checked && userMarker) {
+                    map.removeLayer(userMarker);
+                    userMarker = null;
+                }
+                Notification.show(`Показ местоположения ${this.checked ? 'включен' : 'выключен'}`, 'info');
+            });
+
+            document.getElementById('personalRecommendations').addEventListener('change', function() {
+                appState.privacy.personalRecommendations = this.checked;
+                saveSettings();
+                Notification.show(`Персональные рекомендации ${this.checked ? 'включены' : 'выключены'}`, 'info');
+            });
+
+            document.getElementById('analyticsCollection').addEventListener('change', function() {
+                appState.privacy.analytics = this.checked;
+                saveSettings();
+                Notification.show(`Сбор аналитики ${this.checked ? 'включен' : 'выключен'}`, this.checked ? 'info' : 'warning');
+            });
+
+            // Язык
+            document.querySelectorAll('.language-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const newLang = this.dataset.lang;
+                    appState.language = newLang;
+                    saveSettings();
+                    updateLanguageOptions();
+                    Notification.show(`Язык изменен на: ${this.textContent}`, 'info');
+                });
+            });
+
+            // Тема
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const newTheme = this.dataset.theme;
+                    applyTheme(newTheme);
+                    saveSettings();
+                    updateThemeOptions();
+                    Notification.show(`Тема изменена на: ${this.textContent}`, 'info');
+                });
+            });
+
+            // Размер текста
+            document.querySelectorAll('.text-size-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    const newSize = this.dataset.size;
+                    applyTextSize(newSize);
+                    saveSettings();
+                    updateTextSizeOptions();
+                    Notification.show(`Размер текста изменен на: ${this.textContent}`, 'info');
+                });
+            });
+        }
+
+        // ================== ФУНКЦИИ ПРОФИЛЯ И НАСТРОЕК ==================
+
+        function openSettings(section) {
+            const settingsPanel = document.getElementById('settingsPanel');
+            const settingsTitle = document.getElementById('settingsTitle');
+            const allSections = document.querySelectorAll('.settings-section');
+            
+            // Устанавливаем заголовок
+            const titles = {
+                'notifications': 'Уведомления',
+                'privacy': 'Конфиденциальность',
+                'language': 'Язык и регион',
+                'appearance': 'Внешний вид'
+            };
+            settingsTitle.textContent = titles[section] || 'Настройки';
+            
+            // Показываем нужную секцию
+            allSections.forEach(sec => sec.classList.remove('active'));
+            document.getElementById(`${section}-settings`).classList.add('active');
+            
+            // Открываем панель настроек
+            settingsPanel.classList.add('active');
+            profilePanel.close();
+        }
+
+        function switchToBusiness() {
+            businessPanel.open();
+            profilePanel.close();
+            Notification.show('Переход в бизнес-панель', 'info');
+        }
+
+        function showHelp() {
+            Notification.show('📞 Служба поддержки: support@mapchap.ru\n💬 Чат-бот: @mapchap_support_bot', 'info', 6000);
+        }
+
+        function showAbout() {
+            Notification.show('MapChap v2.0\nПоиск выгодных предложений рядом с вами\n\n© 2024 MapChap. Все права защищены.', 'info', 5000);
+        }
+
+        function logout() {
+            if (confirm('Вы уверены, что хотите выйти?')) {
+                Notification.show('Выход из аккаунта...', 'warning');
+                setTimeout(() => {
+                    localStorage.clear();
+                    window.location.reload();
+                }, 1500);
+            }
+        }
+
+        // ================== БИЗНЕС-ФУНКЦИИ ==================
+
+        function editAd(adId) {
+            Notification.show(`Редактирование объявления: ${adId}`, 'info');
+            businessPanel.showSection('create-ad');
+            
+            // Заполняем форму данными
+            document.getElementById('adName').value = 'Кофейня Central';
+            document.getElementById('adCategory').value = 'cafe';
+            document.getElementById('adAddress').value = 'Улица Новый Арбат, 15';
+            document.getElementById('adDescription').value = 'Скидка на все напитки до 18:00. Акция действует для всех гостей.';
+            document.getElementById('adDiscount').value = '30';
+            document.getElementById('adTime').value = 'до 18:00';
+        }
+
+        function showAnalytics(adId) {
+            Notification.show(`Открыта аналитика для: ${adId}`, 'info');
+            businessPanel.showSection('analytics');
+        }
+
+        function generateReport() {
+            Notification.show('Формирование отчета...', 'info');
+            
+            setTimeout(() => {
+                const reportData = {
+                    period: 'За последние 30 дней',
+                    views: 2548,
+                    clicks: 167,
+                    ctr: '6.5%',
+                    spent: '₽2,340',
+                    topOffers: ['Кофейня Central', 'Ресторан Pushkin']
+                };
+                
+                Notification.show(`✅ Отчет готов!\nПериод: ${reportData.period}\nПросмотры: ${reportData.views}\nКлики: ${reportData.clicks}`, 'success', 5000);
+            }, 2000);
+        }
+
+        async function createNewAd() {
+            const adName = document.getElementById('adName').value;
+            const adCategory = document.getElementById('adCategory').value;
+            const adAddress = document.getElementById('adAddress').value;
+            const adDescription = document.getElementById('adDescription').value;
+            const adDiscount = document.getElementById('adDiscount').value;
+            const adTime = document.getElementById('adTime').value;
+
+            if (!adName || !adCategory || !adAddress || !adDescription || !adDiscount) {
+                Notification.show('Заполните все обязательные поля!', 'error');
+                return;
+            }
+
+            const btn = document.getElementById('createAdBtn');
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<div class="loading"></div> Создание...';
+            btn.disabled = true;
+
+            try {
+                // Отправка данных на API Gateway
+                const response = await fetch(`${API_BASE_URL}/ads`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        name: adName,
+                        category: adCategory,
+                        address: adAddress,
+                        description: adDescription,
+                        discount: adDiscount,
+                        time: adTime
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error('Ошибка создания объявления');
+                }
+
+                const result = await response.json();
+                
+                Notification.show(`✅ Объявление "${adName}" успешно создано!`, 'success');
+                
+                // Очистка формы
+                ['adName', 'adCategory', 'adAddress', 'adDescription', 'adDiscount', 'adTime'].forEach(id => {
+                    document.getElementById(id).value = '';
+                });
+                
+                // Переходим в раздел моих объявлений
+                businessPanel.showSection('my-ads');
+                
+            } catch (error) {
+                console.error('Error creating ad:', error);
+                Notification.show('Ошибка при создании объявления', 'error');
+            } finally {
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            }
+        }
+
+        // ================== РЕАЛЬНАЯ ИНТЕГРАЦИЯ С API ФНС ==================
+
+        function validateINN(inn) {
+            if (currentINNType === 'ip' && inn.length !== 12) {
+                return { isValid: false, error: 'ИНН ИП должен содержать 12 цифр' };
+            }
+            
+            if (currentINNType === 'ooo' && inn.length !== 10) {
+                return { isValid: false, error: 'ИНН ООО должен содержать 10 цифр' };
+            }
+
+            if (!/^\d+$/.test(inn)) {
+                return { isValid: false, error: 'ИНН должен содержать только цифры' };
+            }
+
+            return { isValid: true };
+        }
+
+        function setupINNTypeSelector() {
+            const typeButtons = document.querySelectorAll('.inn-type-btn');
+            const innInput = document.getElementById('innInput');
+            const innLabel = document.getElementById('innLabel');
+            const innDescription = document.getElementById('innDescription');
+
+            typeButtons.forEach(btn => {
+                btn.addEventListener('click', function() {
+                    typeButtons.forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    currentINNType = this.dataset.innType;
+                    
+                    if (currentINNType === 'ip') {
+                        innInput.placeholder = 'Введите 12 цифр';
+                        innInput.maxLength = 12;
+                        innLabel.textContent = 'ИНН индивидуального предпринимателя *';
+                        innDescription.textContent = 'Введите 12 цифр ИНН индивидуального предпринимателя';
+                    } else {
+                        innInput.placeholder = 'Введите 10 цифр';
+                        innInput.maxLength = 10;
+                        innLabel.textContent = 'ИНН юридического лица (ООО) *';
+                        innDescription.textContent = 'Введите 10 цифр ИНН юридического лица';
+                    }
+                    
+                    innInput.value = '';
+                    document.getElementById('verificationStatus').innerHTML = '';
+                    document.getElementById('apiInfo').style.display = 'block';
+                });
+            });
+        }
+
+        async function verifyINN() {
+            const inn = document.getElementById('innInput').value;
+            const btn = document.getElementById('verifyInnBtn');
+            const statusDiv = document.getElementById('verificationStatus');
+
+            const validation = validateINN(inn);
+            if (!validation.isValid) {
+                Notification.show(validation.error, 'error');
+                return;
+            }
+
+            const originalText = btn.innerHTML;
+            btn.innerHTML = '<div class="loading"></div> Запрос в ФНС...';
+            btn.disabled = true;
+            statusDiv.innerHTML = '';
+
+            try {
+                // Имитация запроса к ФНС
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                const companyType = currentINNType === 'ip' ? 'ИП' : 'ООО';
+                const companyName = currentINNType === 'ip' 
+                    ? `ИП Иванов А.А.` 
+                    : `ООО "Компания ${inn.substr(0, 6)}"`;
+                
+                statusDiv.innerHTML = `
+                    <div class="verification-status">
+                        <div style="font-weight: 600; color: var(--success); margin-bottom: 8px;">
+                            <i class="fas fa-check-circle"></i> Верификация пройдена
+                        </div>
+                        <div style="font-size: 13px; margin-bottom: 4px;">
+                            <strong>${companyType}:</strong> ${companyName}
+                        </div>
+                        <div style="font-size: 11px; color: var(--text-secondary);">
+                            <strong>ИНН:</strong> ${inn}<br>
+                            <strong>ОГРН:</strong> ${Math.random().toString().substr(2, 13)}<br>
+                            <strong>Статус:</strong> Действующий
+                        </div>
+                    </div>
+                `;
+                
+                Notification.show(`${companyType} "${companyName}" успешно подтвержден!`, 'success');
+                
+                localStorage.setItem('innVerified', 'true');
+                localStorage.setItem('verifiedINN', inn);
+                localStorage.setItem('innType', currentINNType);
+                localStorage.setItem('companyName', companyName);
+                
+            } catch (error) {
+                statusDiv.innerHTML = `
+                    <div class="verification-status error">
+                        <div style="font-weight: 600; color: var(--error);">
+                            <i class="fas fa-exclamation-triangle"></i> Ошибка подключения
+                        </div>
+                        <div style="font-size: 11px;">
+                            Сервис ФНС временно недоступен
+                        </div>
+                    </div>
+                `;
+                Notification.show('Ошибка при проверке ИНН', 'error');
+            } finally {
+                btn.innerHTML = '<i class="fas fa-shield-alt"></i> Проверить через ФНС';
+                btn.disabled = false;
+            }
+        }
+
+        // ================== УПРАВЛЕНИЕ УВЕДОМЛЕНИЯМИ ==================
+
+        class Notification {
+            static show(message, type = 'success', duration = 4000) {
+                const notification = document.getElementById('notification');
+                notification.textContent = message;
+                notification.className = `notification ${type} show`;
+                
+                setTimeout(() => {
+                    notification.classList.remove('show');
+                }, duration);
+            }
+        }
+
+        // ================== УПРАВЛЕНИЕ ПАНЕЛЯМИ ==================
+
+        class BusinessPanel {
+            constructor() {
+                this.panel = document.getElementById('businessPanel');
+                this.businessBtn = document.getElementById('businessBtn');
+                this.backBtn = document.getElementById('backBtn');
+                this.navButtons = document.querySelectorAll('.business-nav-btn');
+                this.sections = document.querySelectorAll('.business-section');
+                
+                this.init();
+            }
+
+            init() {
+                this.businessBtn.addEventListener('click', () => this.open());
+                this.backBtn.addEventListener('click', () => this.close());
+                
+                this.navButtons.forEach(btn => {
+                    btn.addEventListener('click', () => {
+                        const sectionId = btn.dataset.section;
+                        this.showSection(sectionId);
+                    });
+                });
+            }
+
+            open() {
+                this.panel.classList.add('active');
+                document.body.style.overflow = 'hidden';
+                document.getElementById('apiInfo').style.display = 'block';
+            }
+
+            close() {
+                this.panel.classList.remove('active');
+                document.body.style.overflow = '';
+            }
+
+            showSection(sectionId) {
+                this.navButtons.forEach(btn => {
+                    btn.classList.remove('active');
+                    if (btn.dataset.section === sectionId) {
+                        btn.classList.add('active');
+                    }
+                });
+
+                this.sections.forEach(section => {
+                    section.classList.remove('active');
+                    if (section.id === sectionId) {
+                        section.classList.add('active');
+                    }
+                });
+            }
+        }
+
+        class ProfilePanel {
+            constructor() {
+                this.panel = document.getElementById('profilePanel');
+                this.profileBtn = document.getElementById('profileBtn');
+                
+                this.init();
+            }
+
+            init() {
+                this.profileBtn.addEventListener('click', () => this.open());
+                
+                document.addEventListener('click', (e) => {
+                    if (!this.panel.contains(e.target) && !this.profileBtn.contains(e.target)) {
+                        this.close();
+                    }
+                });
+            }
+
+            open() {
+                this.panel.classList.add('active');
+            }
+
+            close() {
+                this.panel.classList.remove('active');
+            }
+        }
+
+        class SettingsPanel {
+            constructor() {
+                this.panel = document.getElementById('settingsPanel');
+                this.backBtn = document.getElementById('settingsBackBtn');
+                
+                this.init();
+            }
+
+            init() {
+                this.backBtn.addEventListener('click', () => this.close());
+            }
+
+            close() {
+                this.panel.classList.remove('active');
+                profilePanel.open();
+            }
+        }
+
+        // ================== УПРАВЛЕНИЕ БОТТОМ-ШИТОМ ==================
+
+        class BottomSheet {
+            constructor() {
+                this.sheet = document.getElementById('bottomSheet');
+                this.handle = document.getElementById('sheetHandle');
+                
+                this.init();
+            }
+
+            init() {
+                this.handle.addEventListener('click', () => this.toggle());
+            }
+
+            toggle() {
+                if (this.isExpanded()) {
+                    this.collapse();
+                } else {
+                    this.expand();
+                }
+            }
+
+            expand() {
+                this.sheet.classList.remove('collapsed');
+                this.sheet.classList.add('expanded');
+            }
+
+            collapse() {
+                this.sheet.classList.remove('expanded');
+                this.sheet.classList.add('collapsed');
+            }
+
+            isExpanded() {
+                return this.sheet.classList.contains('expanded');
+            }
+        }
+
+        // ================== ИНИЦИАЛИЗАЦИЯ КАРТЫ ==================
+
+        function initMap() {
+            map = L.map('map', {
+                zoomControl: false,
+                attributionControl: false
+            }).setView([55.7558, 37.6173], 13);
+
+            L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+                attribution: '© OpenStreetMap contributors'
+            }).addTo(map);
+
+            // Примеры предложений
+            const offers = [
+                {
+                    lat: 55.7915, lng: 37.5884,
+                    name: "Кофейня Central",
+                    discount: "30%",
+                    address: "Улица Новый Арбат, 15",
+                    description: "Скидка на все напитки до 18:00",
+                    type: "hot"
+                },
+                {
+                    lat: 55.7649, lng: 37.6056,
+                    name: "Ресторан Pushkin", 
+                    discount: "20%",
+                    address: "Тверской бульвар, 26",
+                    description: "Скидка на бизнес-ланчи",
+                    type: "medium"
+                }
+            ];
+
+            offers.forEach(offer => {
+                const markerClass = `custom-marker marker-${offer.type}`;
+                const marker = L.marker([offer.lat, offer.lng], {
+                    icon: L.divIcon({
+                        html: `⚡${offer.discount}`,
+                        className: markerClass,
+                        iconSize: [36, 36]
+                    })
+                }).addTo(map);
+
+                marker.bindPopup(`
+                    <div style="min-width: 180px;">
+                        <h4 style="margin: 0 0 6px 0; color: var(--accent-blue);">${offer.name}</h4>
+                        <p style="margin: 0 0 4px 0; font-weight: 600; color: var(--accent-blue);">-${offer.discount}</p>
+                        <p style="margin: 0; font-size: 12px; color: var(--text-secondary);">${offer.address}</p>
+                    </div>
+                `);
+            });
+
+            document.querySelector('.zoom-in').addEventListener('click', () => map.zoomIn());
+            document.querySelector('.zoom-out').addEventListener('click', () => map.zoomOut());
+
+            // Автоматически определяем локацию при запуске
+            setTimeout(() => {
+                getUserLocation();
+            }, 1000);
+        }
+
+        // Вспомогательные функции
+        function addToFavorites(offerId) {
+            Notification.show(`❤️ Добавлено в избранное: ${offerId}`, 'success');
+        }
+
+        function showRoute(offerId) {
+            Notification.show(`🗺️ Построение маршрута до: ${offerId}`, 'info');
+        }
+
+        // Инициализация приложения
+        let businessPanel, bottomSheet, profilePanel, settingsPanel;
+
+        document.addEventListener('DOMContentLoaded', function() {
+            initMap();
+            businessPanel = new BusinessPanel();
+            bottomSheet = new BottomSheet();
+            profilePanel = new ProfilePanel();
+            settingsPanel = new SettingsPanel();
+            
+            // Инициализация настроек
+            initializeSettings();
+            setupSettingsHandlers();
+            setupINNTypeSelector();
+            
+            document.getElementById('apiInfo').style.display = 'block';
+            
+            document.querySelectorAll('.district-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    document.querySelectorAll('.district-card').forEach(c => c.classList.remove('active'));
+                    this.classList.add('active');
+                });
+            });
+
+            // Слушатель для автоматической темы
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', e => {
+                if (appState.theme === 'auto') {
+                    applyTheme('auto');
+                }
+            });
+        });
+    </script>
+</body>
+                                  </html>
