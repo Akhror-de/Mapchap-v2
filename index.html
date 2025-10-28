@@ -1,0 +1,4630 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MapChap - Выгодные предложения</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/suggestions-jquery@21.12.0/dist/js/jquery.suggestions.min.js"></script>
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=07b74146-5f5a-46bf-a2b1-cf6d052a41bb&lang=ru_RU" type="text/javascript"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --tg-theme-bg-color: #0a0a0a;
+            --tg-theme-text-color: #ffffff;
+            --tg-theme-hint-color: #a0a0a0;
+            --tg-theme-link-color: #667eea;
+            --tg-theme-button-color: #667eea;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-secondary-bg-color: #1a1a1a;
+            
+            --text-size: 14px;
+            --header-height: 54px;
+            --primary-bg: var(--tg-theme-bg-color, #0a0a0a);
+            --surface-bg: var(--tg-theme-secondary-bg-color, #1a1a1a);
+            --card-bg: #2a2a2a;
+            --border-color: #333333;
+            --text-primary: var(--tg-theme-text-color, #ffffff);
+            --text-secondary: var(--tg-theme-hint-color, #a0a0a0);
+            --accent-orange: #ff6b35;
+            --accent-green: #00d4aa;
+            --accent-blue: var(--tg-theme-button-color, #667eea);
+            --accent-purple: #764ba2;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            touch-action: pan-x pan-y;
+            font-size: var(--text-size);
+            font-weight: 400;
+        }
+
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        .header {
+            background: var(--surface-bg);
+            padding: 8px 16px;
+            position: relative;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: var(--header-height);
+            gap: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .brand-name {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-green), var(--accent-orange));
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease-in-out infinite;
+            white-space: nowrap;
+            letter-spacing: -0.5px;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .business-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 8px 14px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .business-btn:hover {
+            background: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        .business-btn.active {
+            background: var(--accent-blue);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .profile-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            width: 38px;
+            height: 38px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .profile-btn:hover {
+            background: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        .profile-btn.active {
+            background: var(--accent-blue);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .profile-btn.has-notifications::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: var(--error);
+            border-radius: 50%;
+            border: 2px solid var(--surface-bg);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .map-container {
+            flex: 1;
+            position: relative;
+            background: var(--surface-bg);
+            width: 100%;
+            height: calc(100vh - var(--header-height));
+            overflow: hidden;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        .map-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface-bg);
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 20px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+        }
+
+        .map-placeholder i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .controls-container {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 1000;
+            background: rgba(26, 26, 26, 0.9);
+            padding: 8px;
+            border-radius: 12px;
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+        }
+
+        .control-btn {
+            width: 40px;
+            height: 40px;
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .control-btn:hover {
+            background: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        .control-btn.active {
+            background: var(--accent-blue);
+            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+        }
+
+        .bottom-sheet {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--surface-bg);
+            border-top: 1px solid var(--border-color);
+            z-index: 1001;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 40vh;
+            max-height: 70vh;
+            border-radius: 20px 20px 0 0;
+            overflow: hidden;
+            touch-action: pan-y;
+        }
+
+        .bottom-sheet.collapsed {
+            transform: translateY(calc(100% - 80px));
+            height: 80px;
+        }
+
+        .bottom-sheet.expanded {
+            transform: translateY(0);
+        }
+
+        .bottom-sheet-handle {
+            width: 40px;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            margin: 12px auto;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .bottom-sheet-handle:hover {
+            background: var(--accent-blue);
+        }
+
+        .bottom-sheet-content {
+            padding: 0 16px 16px;
+            height: calc(100% - 40px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            touch-action: pan-y;
+        }
+
+        .section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .districts-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+
+        .district-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 14px;
+            text-align: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .district-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-blue);
+        }
+
+        .district-card.active {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-color: transparent;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .district-name {
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 4px;
+        }
+
+        .district-offers {
+            font-size: 11px;
+            color: var(--text-secondary);
+        }
+
+        .offer-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 14px;
+            padding: 16px;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+            overflow: hidden;
+            margin-bottom: 10px;
+            cursor: pointer;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .offer-card:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-blue);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2);
+        }
+
+        .offer-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: linear-gradient(90deg, var(--accent-blue), var(--accent-purple));
+        }
+
+        .offer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 10px;
+        }
+
+        .offer-title {
+            font-size: 15px;
+            font-weight: 600;
+            color: var(--text-primary);
+            flex: 1;
+        }
+
+        .offer-discount {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            padding: 5px 10px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+        }
+
+        .offer-address {
+            font-size: 12px;
+            color: var(--text-secondary);
+            margin-bottom: 10px;
+        }
+
+        .offer-description {
+            font-size: 12px;
+            color: var(--text-secondary);
+            line-height: 1.4;
+            padding: 10px;
+            background: var(--surface-bg);
+            border-radius: 8px;
+            border-left: 3px solid var(--accent-blue);
+            margin-bottom: 10px;
+        }
+
+        .offer-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .offer-time {
+            font-size: 11px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .offer-actions {
+            display: flex;
+            gap: 5px;
+        }
+
+        .offer-action-btn {
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            padding: 5px 10px;
+            color: var(--text-primary);
+            font-size: 11px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .offer-action-btn:hover {
+            background: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        .offer-action-btn.active {
+            background: var(--accent-blue);
+            box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+        }
+
+        .like-btn.active {
+            background: #ef4444;
+            color: white;
+        }
+
+        .business-panel {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--surface-bg);
+            z-index: 2000;
+            transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+            touch-action: pan-y;
+        }
+
+        .business-panel.active {
+            left: 0;
+        }
+
+        .business-header {
+            background: var(--card-bg);
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .back-btn {
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 10px;
+            width: 36px;
+            height: 36px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .back-btn:hover {
+            background: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        .business-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .business-content {
+            padding: 16px;
+            height: calc(100vh - 120px);
+            overflow-y: auto;
+            touch-action: pan-y;
+        }
+
+        .business-nav {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .business-nav-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px 10px;
+            color: var(--text-primary);
+            font-size: 12px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            -webkit-tap-highlight-color: transparent;
+        }
+
+        .business-nav-btn:hover {
+            transform: translateY(-2px);
+            border-color: var(--accent-blue);
+        }
+
+        .business-nav-btn.active {
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            border-color: transparent;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(102, 126, 234, 0.3);
+        }
+
+        .business-nav-btn i {
+            font-size: 16px;
+            margin-bottom: 4px;
+        }
+
+        /* Продолжение стилей... */
+    </style>
+</head>
+<body class="tg-themed">
+    <div class="app-container">
+        <!-- Индикатор состояния API -->
+        <div class="api-health-indicator" id="apiHealthIndicator">
+            <div class="health-status-dot" id="healthStatusDot"></div>
+            <span id="healthStatusText">Проверка API...</span>
+            <button class="api-retry-btn" id="apiRetryBtn" style="display: none;">Повторить</button>
+            <div class="api-health-details" id="apiHealthDetails">
+                <div class="health-metric">
+                    <span class="health-metric-label">Статус:</span>
+                    <span class="health-metric-value" id="healthStatusDetail">Проверка...</span>
+                </div>
+                <div class="health-metric">
+                    <span class="health-metric-label">Время ответа:</span>
+                    <span class="health-metric-value" id="responseTimeDetail">-</span>
+                </div>
+                <div class="health-metric">
+                    <span class="health-metric-label">Последняя проверка:</span>
+                    <span class="health-metric-value" id="lastCheckDetail">-</span>
+                </div>
+                <div class="health-metric">
+                    <span class="health-metric-label">Ошибки:</span>
+                    <span class="health-metric-value" id="errorCountDetail">0</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Индикатор качества соединения -->
+        <div class="connection-quality" id="connectionQuality" style="display: none;">
+            <i class="fas fa-signal"></i>
+            <span id="connectionQualityText">Хорошее</span>
+        </div>
+
+        <!-- Индикатор синхронизации -->
+        <div class="sync-indicator" id="syncIndicator">
+            <div class="sync-status-dot" id="syncStatusDot"></div>
+            <span id="syncStatusText">Синхронизация...</span>
+            <div class="sync-details" id="syncDetails">
+                <div class="sync-metric">
+                    <span class="sync-metric-label">Статус:</span>
+                    <span class="sync-metric-value" id="syncStatusDetail">Проверка...</span>
+                </div>
+                <div class="sync-metric">
+                    <span class="sync-metric-label">Очередь операций:</span>
+                    <span class="sync-metric-value" id="queueSizeDetail">0</span>
+                </div>
+                <div class="sync-metric">
+                    <span class="sync-metric-label">Конфликты:</span>
+                    <span class="sync-metric-value" id="conflictsDetail">0</span>
+                </div>
+                <div class="sync-metric">
+                    <span class="sync-metric-label">Последняя синхронизация:</span>
+                    <span class="sync-metric-value" id="lastSyncDetail">-</span>
+                </div>
+                <div class="sync-progress">
+                    <div class="sync-progress-bar" id="syncProgressBar" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Баннер автономного режима -->
+        <div class="offline-mode-banner" id="offlineModeBanner" style="display: none;">
+            <i class="fas fa-wifi-slash"></i>
+            <span>Автономный режим. Данные могут быть устаревшими.</span>
+        </div>
+
+        <!-- Уведомление о повторных попытках -->
+        <div class="retry-notification" id="retryNotification" style="display: none;">
+            <i class="fas fa-sync-alt fa-spin"></i>
+            <div>
+                <div id="retryMessage">Повторная попытка подключения...</div>
+                <div class="retry-progress">
+                    <span id="retryCount">Попытка 1/3</span>
+                    <div class="retry-dots">
+                        <div class="retry-dot"></div>
+                        <div class="retry-dot"></div>
+                        <div class="retry-dot"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно разрешения конфликтов -->
+        <div class="modal-overlay" id="conflictResolutionModal">
+            <div class="conflict-resolution-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Разрешение конфликтов данных</h3>
+                    <button class="modal-close" onclick="closeConflictResolution()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-content">
+                    <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">
+                        Обнаружены расхождения между локальными данными и данными на сервере. Выберите, какие версии сохранить.
+                    </p>
+                    <div id="conflictsList">
+                        <!-- Конфликты будут загружены здесь -->
+                    </div>
+                    <div style="display: flex; gap: 10px; margin-top: 20px;">
+                        <button class="submit-btn" onclick="resolveAllConflicts('server')">
+                            <i class="fas fa-cloud"></i> Использовать все серверные версии
+                        </button>
+                        <button class="submit-btn" style="background: var(--warning);" onclick="resolveAllConflicts('local')">
+                            <i class="fas fa-desktop"></i> Сохранить все локальные версии
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Модальное окно подтверждения удаления -->
+        <div class="modal-overlay" id="deleteConfirmationModal">
+            <div class="delete-confirmation-modal">
+                <div class="modal-header">
+                    <h3 class="modal-title">Подтверждение удаления</h3>
+                    <button class="modal-close" onclick="closeDeleteConfirmation()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-content">
+                    <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">
+                        Вы уверены, что хотите удалить это объявление? Это действие нельзя отменить.
+                    </p>
+                    <div id="deleteAdInfo">
+                        <!-- Информация об удаляемом объявлении -->
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Причина удаления (необязательно):</label>
+                        <textarea class="delete-reason-input" id="deleteReason" placeholder="Укажите причину удаления..."></textarea>
+                    </div>
+                    <div class="delete-actions">
+                        <button class="delete-cancel-btn" onclick="closeDeleteConfirmation()">
+                            <i class="fas fa-times"></i> Отмена
+                        </button>
+                        <button class="delete-confirm-btn" id="confirmDeleteBtn">
+                            <i class="fas fa-trash"></i> Удалить
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Auth Screen -->
+        <div class="auth-screen" id="authScreen">
+            <div class="auth-logo">
+                <i class="fas fa-map-marked-alt"></i>
+            </div>
+            <h1 class="auth-title">MapChap</h1>
+            <p class="auth-subtitle">Находите лучшие предложения рядом с вами. Скидки, акции и специальные предложения от местных бизнесов.</p>
+            
+            <button class="auth-btn" id="telegramAuthBtn">
+                <i class="fab fa-telegram"></i>
+                Войти через Telegram
+            </button>
+            
+            <div class="auth-features">
+                <div class="auth-feature">
+                    <i class="fas fa-check"></i>
+                    <span>Мгновенная авторизация</span>
+                </div>
+                <div class="auth-feature">
+                    <i class="fas fa-check"></i>
+                    <span>Персональные рекомендации</span>
+                </div>
+                <div class="auth-feature">
+                    <i class="fas fa-check"></i>
+                    <span>Сохранение избранного</span>
+                </div>
+                <div class="auth-feature">
+                    <i class="fas fa-check"></i>
+                    <span>Создание бизнес-объявлений</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main App (hidden until auth) -->
+        <div id="mainApp" style="display: none;">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-left">
+                    <button class="business-btn" id="businessBtn">
+                        <i class="fas fa-briefcase"></i> Бизнес
+                    </button>
+                    <div class="brand-name">MapChap</div>
+                </div>
+                <div class="header-actions">
+                    <button class="profile-btn has-notifications" id="profileBtn">
+                        <i class="fas fa-user"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Map Container -->
+            <div class="map-container">
+                <div id="map"></div>
+                
+                <div class="map-placeholder" id="mapPlaceholder">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <h3>Загрузка карты...</h3>
+                    <p>Инициализация Яндекс Карт</p>
+                </div>
+                
+                <!-- Controls -->
+                <div class="controls-container">
+                    <button class="control-btn" id="zoomInBtn">+</button>
+                    <button class="control-btn" id="zoomOutBtn">−</button>
+                    <button class="control-btn location" id="locationBtn">📍</button>
+                </div>
+            </div>
+
+            <!-- Bottom Sheet -->
+            <div class="bottom-sheet expanded" id="bottomSheet">
+                <div class="bottom-sheet-handle" id="sheetHandle"></div>
+                <div class="bottom-sheet-content" id="sheetContent">
+                    <h3 class="section-title">Предложения по районам</h3>
+                    <div class="districts-grid">
+                        <div class="district-card active" data-district="all">
+                            <div class="district-name">Все районы</div>
+                            <div class="district-offers">Загрузка...</div>
+                        </div>
+                        <div class="district-card" data-district="center">
+                            <div class="district-name">Центр</div>
+                            <div class="district-offers">Загрузка...</div>
+                        </div>
+                        <div class="district-card" data-district="north">
+                            <div class="district-name">Север</div>
+                            <div class="district-offers">Загрузка...</div>
+                        </div>
+                        <div class="district-card" data-district="south">
+                            <div class="district-name">Юг</div>
+                            <div class="district-offers">Загрузка...</div>
+                        </div>
+                    </div>
+
+                    <h3 class="section-title" id="districtTitle">Все предложения</h3>
+                    <div class="offers-list" id="offersList">
+                        <!-- Offers will be loaded here -->
+                        <div class="loading" style="margin: 20px auto;"></div>
+                        <p style="text-align: center; color: var(--text-secondary);">Загрузка предложений...</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Бизнес-панель -->
+            <div class="business-panel" id="businessPanel">
+                <div class="business-header">
+                    <button class="back-btn" id="backBtn">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h2 class="business-title">Бизнес-панель</h2>
+                </div>
+
+                <div class="business-content">
+                    <div class="business-nav">
+                        <button class="business-nav-btn active" data-section="create-ad">
+                            <i class="fas fa-plus-circle"></i>
+                            Создать объявление
+                        </button>
+                        <button class="business-nav-btn" data-section="my-ads">
+                            <i class="fas fa-ad"></i>
+                            Мои объявления
+                        </button>
+                        <button class="business-nav-btn" data-section="analytics">
+                            <i class="fas fa-chart-line"></i>
+                            Аналитика
+                        </button>
+                        <button class="business-nav-btn" data-section="verification">
+                            <i class="fas fa-shield-alt"></i>
+                            Верификация
+                        </button>
+                        <button class="business-nav-btn" data-section="moderation" id="moderationBtn" style="display: none;">
+                            <i class="fas fa-user-shield"></i>
+                            Модерация
+                        </button>
+                    </div>
+
+                    <!-- Секция: Создание объявления -->
+                    <div class="business-section active" id="create-ad">
+                        <div class="create-ad-form">
+                            <div class="step-indicator">
+                                <div class="step active" id="step1">
+                                    <div class="step-circle">1</div>
+                                    <div class="step-text">Данные</div>
+                                </div>
+                                <div class="step" id="step2">
+                                    <div class="step-circle">2</div>
+                                    <div class="step-text">Верификация</div>
+                                </div>
+                                <div class="step" id="step3">
+                                    <div class="step-circle">3</div>
+                                    <div class="step-text">Подтверждение</div>
+                                </div>
+                            </div>
+
+                            <!-- Шаг 1: Основные данные -->
+                            <div id="create-ad-step-1">
+                                <div class="form-group">
+                                    <label class="form-label">Название заведения *</label>
+                                    <input type="text" class="form-input" id="adName" placeholder="Например: Кофейня Central" required
+                                           oninput="checkNameSafety(this.value)">
+                                    <div id="nameWarning" style="display:none; color:var(--error); font-size:11px; margin-top:4px;"></div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Категория *</label>
+                                    <select class="form-select" id="adCategory" required onchange="checkCategorySafety(this.value)">
+                                        <option value="">Выберите категорию</option>
+                                        <option value="cafe">🍽️ Кафе и рестораны</option>
+                                        <option value="shop">🛍️ Магазины</option>
+                                        <option value="services">🔧 Услуги</option>
+                                        <option value="education">🎓 Образование</option>
+                                        <option value="health">🏥 Здоровье и спорт</option>
+                                        <option value="beauty">💄 Красота</option>
+                                        <option value="entertainment">🎭 Развлечения</option>
+                                        <option value="other">📌 Другое</option>
+                                    </select>
+                                    <div id="categoryWarning" style="display:none; color:var(--error); font-size:11px; margin-top:4px;"></div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Район *</label>
+                                    <select class="form-select" id="adDistrict" required>
+                                        <option value="">Выберите район</option>
+                                        <option value="center">Центр</option>
+                                        <option value="north">Север</option>
+                                        <option value="south">Юг</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Адрес *</label>
+                                    <div class="suggestions-wrapper">
+                                        <input type="text" class="form-input" id="adAddress" placeholder="Начните вводить адрес..." required>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Телефон для связи *</label>
+                                    <input type="tel" class="form-input" id="adPhone" placeholder="+7 (999) 123-45-67" required
+                                           onchange="checkPhoneType(this.value)">
+                                    <div id="phoneAnalysis" style="display:none; margin-top:8px; padding:8px; background:var(--surface-bg); border-radius:6px; font-size:11px;"></div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Описание предложения *</label>
+                                    <textarea class="form-textarea" id="adDescription" placeholder="Опишите ваше специальное предложение..." required
+                                              oninput="checkDescriptionSafety(this.value)"></textarea>
+                                    <div id="descriptionWarning" style="display:none; color:var(--error); font-size:11px; margin-top:4px;"></div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Скидка (%) *</label>
+                                    <input type="number" class="form-input" id="adDiscount" placeholder="Например: 30" min="1" max="99" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Время действия</label>
+                                    <input type="text" class="form-input" id="adTime" placeholder="Например: до 18:00 или ежедневно">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Сайт (если есть)</label>
+                                    <input type="text" class="form-input" id="adWebsite" placeholder="example.ru">
+                                </div>
+                                
+                                <!-- Юридическое согласие -->
+                                <div class="legal-checkbox">
+                                    <input type="checkbox" id="legalAgreement" required>
+                                    <label>
+                                        Я подтверждаю, что являюсь законным представителем данного бизнеса 
+                                        и несу полную ответственность за достоверность размещаемой информации.
+                                    </label>
+                                </div>
+                                
+                                <div class="legal-checkbox">
+                                    <input type="checkbox" id="contentAgreement" required>
+                                    <label>
+                                        Гарантирую, что содержание объявления соответствует законодательству РФ.
+                                    </label>
+                                </div>
+                                
+                                <button class="submit-btn" onclick="goToStep(2)">
+                                    <i class="fas fa-arrow-right"></i> Продолжить к верификации
+                                </button>
+                            </div>
+
+                            <!-- Шаг 2: Верификация бизнеса -->
+                            <div id="create-ad-step-2" style="display: none;">
+                                <div class="verification-container">
+                                    <h4 style="margin-bottom: 16px; color: var(--accent-blue);">🔒 Проверка бизнеса</h4>
+                                    
+                                    <!-- Умная верификация -->
+                                    <div class="smart-verification">
+                                        <div class="form-group">
+                                            <label class="form-label">Телефон вашего бизнеса *</label>
+                                            <input type="tel" class="form-input" id="verificationPhone" 
+                                                   placeholder="+7 (999) 123-45-67" required
+                                                   onchange="startSmartVerification(this.value)">
+                                        </div>
+                                        
+                                        <div id="verificationMethods" style="display: none;">
+                                            <div class="verification-step verification-success" id="autoVerified" style="display: none;">
+                                                <div style="display: flex; align-items: center; gap: 10px;">
+                                                    <i class="fas fa-check-circle" style="color: var(--success);"></i>
+                                                    <div>
+                                                        <div style="font-weight: 600;">✅ Бизнес подтвержден автоматически</div>
+                                                        <div style="font-size: 11px; color: var(--text-secondary);" id="autoVerifyReason"></div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            
+                                            <div class="verification-step" id="manualVerification" style="display: none;">
+                                                <h5 style="margin-bottom: 10px;">Выберите способ проверки:</h5>
+                                                
+                                                <div class="verification-option" onclick="selectVerificationMethod('maps')">
+                                                    <input type="radio" name="verificationMethod" value="maps" id="mapsVerify">
+                                                    <label for="mapsVerify" style="flex: 1; cursor: pointer;">
+                                                        <div style="font-weight: 600;">🗺️ Найти на картах</div>
+                                                        <div style="font-size: 11px; color: var(--text-secondary);">Если ваш бизнес есть на Яндекс/Google картах</div>
+                                                    </label>
+                                                </div>
+                                                
+                                                <div class="verification-option" onclick="selectVerificationMethod('phone')">
+                                                    <input type="radio" name="verificationMethod" value="phone" id="phoneVerify">
+                                                    <label for="phoneVerify" style="flex: 1; cursor: pointer;">
+                                                        <div style="font-weight: 600;">📞 Подтвердить по телефону</div>
+                                                        <div style="font-size: 11px; color: var(--text-secondary);">SMS или звонок для проверки</div>
+                                                    </label>
+                                                </div>
+                                                
+                                                <div class="verification-option" onclick="selectVerificationMethod('moderation')">
+                                                    <input type="radio" name="verificationMethod" value="moderation" id="moderateVerify">
+                                                    <label for="moderateVerify" style="flex: 1; cursor: pointer;">
+                                                        <div style="font-weight: 600;">⏳ Проверка модератором</div>
+                                                        <div style="font-size: 11px; color: var(--text-secondary);">1-2 рабочих дня</div>
+                                                    </label>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- ДОБАВЛЕННАЯ КАРТА ДЛЯ ВЫБОРА МЕСТОПОЛОЖЕНИЯ -->
+                                        <div class="form-group" id="locationSelection" style="display: none;">
+                                            <label class="form-label">Уточните местоположение на карте *</label>
+                                            <div class="verification-map-container">
+                                                <div class="map-instructions">
+                                                    <i class="fas fa-info-circle"></i> 
+                                                    Нажмите на карту, чтобы указать точное местоположение вашего бизнеса
+                                                </div>
+                                                <div id="verificationMap" class="verification-map"></div>
+                                            </div>
+                                            <div class="verification-coordinates">
+                                                <div class="coordinates-display">
+                                                    <div class="coordinate-item">
+                                                        <div class="coordinate-label">Широта</div>
+                                                        <div class="coordinate-value" id="selectedLat">-</div>
+                                                    </div>
+                                                    <div class="coordinate-item">
+                                                        <div class="coordinate-label">Долгота</div>
+                                                        <div class="coordinate-value" id="selectedLng">-</div>
+                                                    </div>
+                                                </div>
+                                                <button class="location-confirm-btn" id="confirmLocationBtn" disabled onclick="confirmLocation()">
+                                                    <i class="fas fa-check"></i> Подтвердить местоположение
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <button class="submit-btn" id="continueToStep3" style="display: none;" onclick="goToStep(3)">
+                                    <i class="fas fa-arrow-right"></i> Продолжить
+                                </button>
+                                
+                                <button class="submit-btn" style="background: var(--card-bg); color: var(--text-primary); margin-top: 8px;" onclick="goToStep(1)">
+                                    <i class="fas fa-arrow-left"></i> Назад к данным
+                                </button>
+                            </div>
+
+                            <!-- Шаг 3: Подтверждение -->
+                            <div id="create-ad-step-3" style="display: none;">
+                                <div style="text-align: center; margin-bottom: 20px;">
+                                    <i class="fas fa-check-circle" style="font-size: 48px; color: var(--success); margin-bottom: 16px;"></i>
+                                    <h3 style="margin-bottom: 8px;">Подтверждение данных</h3>
+                                    <p style="color: var(--text-secondary); font-size: 13px;">Проверьте правильность введенных данных</p>
+                                </div>
+                                
+                                <div style="background: var(--surface-bg); padding: 16px; border-radius: 12px; margin-bottom: 20px;">
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                        <span style="color: var(--text-secondary);">Название:</span>
+                                        <span id="confirmAdName" style="font-weight: 600;"></span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                        <span style="color: var(--text-secondary);">Категория:</span>
+                                        <span id="confirmCategory" style="font-weight: 600;"></span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                        <span style="color: var(--text-secondary);">Район:</span>
+                                        <span id="confirmDistrict" style="font-weight: 600;"></span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                        <span style="color: var(--text-secondary);">Телефон:</span>
+                                        <span id="confirmPhone" style="font-weight: 600;"></span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between; margin-bottom: 12px;">
+                                        <span style="color: var(--text-secondary);">Скидка:</span>
+                                        <span id="confirmDiscount" style="font-weight: 600; color: var(--accent-blue);"></span>
+                                    </div>
+                                    <div style="display: flex; justify-content: space-between;">
+                                        <span style="color: var(--text-secondary);">Адрес:</span>
+                                        <span id="confirmAddress" style="font-weight: 600; text-align: right;"></span>
+                                    </div>
+                                </div>
+                                
+                                <div id="verificationStatus" style="background: var(--surface-bg); padding: 12px; border-radius: 8px; margin-bottom: 16px; border-left: 4px solid var(--warning);">
+                                    <div style="display: flex; align-items: center; gap: 8px;">
+                                        <i class="fas fa-shield-alt" style="color: var(--warning);"></i>
+                                        <div>
+                                            <div style="font-weight: 600;">🛡️ Статус проверки</div>
+                                            <div style="font-size: 12px; color: var(--text-secondary);" id="verificationStatusText">Ожидает подтверждения</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <!-- ДОБАВЛЕННЫЙ СТАТУС ОТПРАВКИ НА СЕРВЕР -->
+                                <div id="apiStatus" class="api-status info" style="display: none;">
+                                    <i class="fas fa-sync fa-spin"></i>
+                                    <span id="apiStatusText">Отправка данных на сервер...</span>
+                                </div>
+                                
+                                <button class="submit-btn" id="confirmAdBtn" onclick="confirmAdCreation()">
+                                    <i class="fas fa-check"></i> Подтвердить и создать
+                                </button>
+                                <button class="submit-btn" style="background: var(--card-bg); color: var(--text-primary); margin-top: 8px;" onclick="goToStep(2)">
+                                    <i class="fas fa-edit"></i> Назад к верификации
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Секция: Мои объявления -->
+                    <div class="business-section" id="my-ads" style="display:none;">
+                        <div class="section-title">Мои объявления</div>
+                        
+                        <!-- Статистика объявлений -->
+                        <div class="ads-stats">
+                            <div class="ad-stat-card stat-total">
+                                <div class="ad-stat-number" id="totalAdsCount">0</div>
+                                <div class="ad-stat-label">Всего</div>
+                            </div>
+                            <div class="ad-stat-card stat-active">
+                                <div class="ad-stat-number" id="activeAdsCount">0</div>
+                                <div class="ad-stat-label">Активные</div>
+                            </div>
+                            <div class="ad-stat-card stat-pending">
+                                <div class="ad-stat-number" id="pendingAdsCount">0</div>
+                                <div class="ad-stat-label">На проверке</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Фильтры по статусу -->
+                        <div class="ads-filters">
+                            <button class="ads-filter-btn active" data-status="all">Все</button>
+                            <button class="ads-filter-btn" data-status="active">Активные</button>
+                            <button class="ads-filter-btn" data-status="pending">На проверке</button>
+                            <button class="ads-filter-btn" data-status="rejected">Отклоненные</button>
+                        </div>
+                        
+                        <!-- Список объявлений -->
+                        <div id="myAdsList">
+                            <!-- User's ads will be loaded here -->
+                        </div>
+                        
+                        <!-- Кнопка загрузки еще -->
+                        <button class="load-more-btn" id="loadMoreAds" style="display: none;">
+                            <i class="fas fa-sync"></i> Загрузить еще
+                        </button>
+
+                        <!-- Архивные объявления -->
+                        <div class="archived-ads-section">
+                            <div class="archived-toggle" id="archivedToggle">
+                                <i class="fas fa-chevron-down"></i>
+                                <span>Архивные объявления</span>
+                                <span class="badge" id="archivedCount">0</span>
+                            </div>
+                            <div class="archived-ads-list" id="archivedAdsList">
+                                <!-- Архивные объявления будут загружены здесь -->
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Секция: Аналитика -->
+                    <div class="business-section" id="analytics" style="display:none;">
+                        <div class="section-title">Аналитика</div>
+                        <div style="text-align:center; padding:40px 20px; color:var(--text-secondary);">
+                            <i class="fas fa-chart-line" style="font-size:48px; margin-bottom:16px; opacity:0.5;"></i>
+                            <p>Статистика просмотров и кликов</p>
+                            <div style="margin-top: 20px; text-align: left;">
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                    <span>Просмотры:</span>
+                                    <span style="color: var(--accent-blue); font-weight: 600;">156</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between; margin-bottom: 10px;">
+                                    <span>Клики:</span>
+                                    <span style="color: var(--success); font-weight: 600;">24</span>
+                                </div>
+                                <div style="display: flex; justify-content: space-between;">
+                                    <span>Конверсия:</span>
+                                    <span style="color: var(--warning); font-weight: 600;">15.4%</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Секция: Верификация -->
+                    <div class="business-section" id="verification" style="display:none;">
+                        <div class="section-title">Проверка бизнеса</div>
+                        <div class="verification-container">
+                            <p style="margin-bottom: 16px; color: var(--text-secondary); font-size: 13px;">
+                                Для создания объявлений необходимо подтвердить, что вы представляете реальный бизнес.
+                            </p>
+                            
+                            <div class="verification-step verification-success">
+                                <div style="display: flex; align-items: center; gap: 12px;">
+                                    <i class="fas fa-check-circle" style="color: var(--success); font-size: 20px;"></i>
+                                    <div>
+                                        <div style="font-weight: 600;">✅ Юридическое согласие</div>
+                                        <div style="font-size: 12px; color: var(--text-secondary);">Вы подтвердили ответственность за информацию</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="verification-step">
+                                <h5 style="margin-bottom: 12px;">Способы проверки:</h5>
+                                
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding: 12px; background: var(--surface-bg); border-radius: 8px;">
+                                    <i class="fas fa-map-marker-alt" style="color: var(--accent-blue);"></i>
+                                    <div>
+                                        <div style="font-weight: 600;">🗺️ Поиск на картах</div>
+                                        <div style="font-size: 11px; color: var(--text-secondary);">Если бизнес есть на Яндекс/Google картах</div>
+                                    </div>
+                                </div>
+                                
+                                <div style="display: flex; align-items: center; gap: 12px; margin-bottom: 12px; padding: 12px; background: var(--surface-bg); border-radius: 8px;">
+                                    <i class="fas fa-phone" style="color: var(--success);"></i>
+                                    <div>
+                                        <div style="font-weight: 600;">📞 Подтверждение по телефону</div>
+                                        <div style="font-size: 11px; color: var(--text-secondary);">SMS или звонок на номер бизнеса</div>
+                                    </div>
+                                </div>
+                                
+                                <div style="display: flex; align-items: center; gap: 12px; padding: 12px; background: var(--surface-bg); border-radius: 8px;">
+                                    <i class="fas fa-user-shield" style="color: var(--warning);"></i>
+                                    <div>
+                                        <div style="font-weight: 600;">⏳ Проверка модератором</div>
+                                        <div style="font-size: 11px; color: var(--text-secondary);">Ручная проверка в течение 1-2 дней</div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Секция: Модерация (только для модераторов) -->
+                    <div class="business-section" id="moderation" style="display:none;">
+                        <div class="section-title">Панель модерации</div>
+                        
+                        <!-- Статистика модерации -->
+                        <div class="moderation-stats">
+                            <div class="moderation-stat">
+                                <div class="moderation-stat-number" id="moderationTotal">0</div>
+                                <div class="moderation-stat-label">Всего на проверке</div>
+                            </div>
+                            <div class="moderation-stat">
+                                <div class="moderation-stat-number" id="moderationApproved">0</div>
+                                <div class="moderation-stat-label">Одобрено сегодня</div>
+                            </div>
+                            <div class="moderation-stat">
+                                <div class="moderation-stat-number" id="moderationRejected">0</div>
+                                <div class="moderation-stat-label">Отклонено сегодня</div>
+                            </div>
+                        </div>
+                        
+                        <!-- Поиск и фильтры -->
+                        <div class="form-group">
+                            <input type="text" class="form-input" id="moderationSearch" placeholder="Поиск по названию или ID...">
+                        </div>
+                        
+                        <!-- Список объявлений для модерации -->
+                        <div id="moderationList">
+                            <!-- Объявления для модерации будут загружены здесь -->
+                        </div>
+                        
+                        <!-- Кнопка загрузки еще -->
+                        <button class="load-more-btn" id="loadMoreModeration" style="display: none;">
+                            <i class="fas fa-sync"></i> Загрузить еще
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ПОЛНОСТЬЮ ДОРАБОТАННАЯ ПАНЕЛЬ ПРОФИЛЯ -->
+            <div class="profile-panel" id="profilePanel">
+                <div class="profile-header">
+                    <button class="profile-close-btn" id="profileCloseBtn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <h2 class="profile-title">Профиль</h2>
+                </div>
+                <div class="profile-content">
+                    <!-- Основной экран профиля -->
+                    <div class="profile-section active" id="profileMain">
+                        <div class="user-info">
+                            <div class="user-avatar">
+                                <i class="fas fa-user"></i>
+                            </div>
+                            <div class="user-name" id="profileUserName">Пользователь</div>
+                            <div class="user-id" id="profileUserId">ID: 123456</div>
+                            <div class="user-status" id="profileUserStatus">
+                                <i class="fas fa-check-circle"></i> Аккаунт подтвержден
+                            </div>
+                        </div>
+                        
+                        <div class="user-stats">
+                            <div class="stat-card" onclick="showFavorites()">
+                                <div class="stat-number" id="favoritesCount">0</div>
+                                <div class="stat-label">Избранное</div>
+                            </div>
+                            <div class="stat-card" onclick="showHistory()">
+                                <div class="stat-number" id="viewsCount">156</div>
+                                <div class="stat-label">Просмотры</div>
+                            </div>
+                            <div class="stat-card" onclick="showMyAds()">
+                                <div class="stat-number" id="adsCount">0</div>
+                                <div class="stat-label">Объявления</div>
+                            </div>
+                        </div>
+                        
+                        <div class="profile-menu">
+                            <div class="menu-item" onclick="showFavorites()">
+                                <i class="fas fa-heart"></i>
+                                <span>Избранные предложения</span>
+                                <span class="badge" id="favoritesBadge" style="display: none;">0</span>
+                            </div>
+                            <div class="menu-item" onclick="showHistory()">
+                                <i class="fas fa-history"></i>
+                                <span>История просмотров</span>
+                            </div>
+                            <div class="menu-item" onclick="showMyAds()">
+                                <i class="fas fa-ad"></i>
+                                <span>Мои объявления</span>
+                                <span class="badge" id="adsBadge" style="display: none;">0</span>
+                            </div>
+                            <div class="menu-item" onclick="showSettings()">
+                                <i class="fas fa-cog"></i>
+                                <span>Настройки</span>
+                            </div>
+                            <div class="menu-item" onclick="showNotifications()">
+                                <i class="fas fa-bell"></i>
+                                <span>Уведомления</span>
+                                <span class="badge" id="notificationsBadge">3</span>
+                            </div>
+                        </div>
+
+                        <div class="profile-menu">
+                            <div class="menu-item" onclick="showHelp()">
+                                <i class="fas fa-question-circle"></i>
+                                <span>Помощь и поддержка</span>
+                            </div>
+                            <div class="menu-item" onclick="showAbout()">
+                                <i class="fas fa-info-circle"></i>
+                                <span>О приложении</span>
+                            </div>
+                            <div class="menu-item" onclick="showPrivacy()">
+                                <i class="fas fa-shield-alt"></i>
+                                <span>Конфиденциальность</span>
+                            </div>
+                        </div>
+                        
+                        <div class="profile-actions">
+                            <button class="profile-action-btn" onclick="inviteFriends()">
+                                <i class="fas fa-user-plus"></i>
+                                Пригласить друзей
+                            </button>
+                            <button class="profile-action-btn logout" onclick="logout()">
+                                <i class="fas fa-sign-out-alt"></i>
+                                Выйти из аккаунта
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Секция избранного -->
+                    <div class="profile-section" id="profileFavorites">
+                        <div class="profile-section-header">
+                            <button class="profile-section-back" onclick="backToProfileMain()">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <h2 class="profile-section-title">Избранное</h2>
+                        </div>
+                        <div class="favorites-list" id="favoritesList">
+                            <!-- Избранные предложения будут загружены здесь -->
+                        </div>
+                    </div>
+
+                    <!-- Секция истории просмотров -->
+                    <div class="profile-section" id="profileHistory">
+                        <div class="profile-section-header">
+                            <button class="profile-section-back" onclick="backToProfileMain()">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <h2 class="profile-section-title">История просмотров</h2>
+                        </div>
+                        <div class="history-list" id="historyList">
+                            <!-- История просмотров будет загружена здесь -->
+                        </div>
+                    </div>
+
+                    <!-- Секция настроек -->
+                    <div class="profile-section" id="profileSettings">
+                        <div class="profile-section-header">
+                            <button class="profile-section-back" onclick="backToProfileMain()">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <h2 class="profile-section-title">Настройки</h2>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-label">Уведомления</div>
+                                    <div class="settings-description">Получать уведомления о новых предложениях</div>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="notificationsToggle" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-label">Темная тема</div>
+                                    <div class="settings-description">Использовать темный режим оформления</div>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="darkModeToggle" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                            <div class="settings-item">
+                                <div>
+                                    <div class="settings-label">Геолокация</div>
+                                    <div class="settings-description">Показывать предложения рядом с вами</div>
+                                </div>
+                                <label class="switch">
+                                    <input type="checkbox" id="locationToggle" checked>
+                                    <span class="slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                        
+                        <div class="settings-group">
+                            <div class="settings-item" onclick="showLanguageSettings()">
+                                <div>
+                                    <div class="settings-label">Язык</div>
+                                    <div class="settings-description">Русский</div>
+                                </div>
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                            <div class="settings-item" onclick="showThemeSettings()">
+                                <div>
+                                    <div class="settings-label">Тема оформления</div>
+                                    <div class="settings-description">Системная</div>
+                                </div>
+                                <i class="fas fa-chevron-right"></i>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Секция уведомлений -->
+                    <div class="profile-section" id="profileNotifications">
+                        <div class="profile-section-header">
+                            <button class="profile-section-back" onclick="backToProfileMain()">
+                                <i class="fas fa-arrow-left"></i>
+                            </button>
+                            <h2 class="profile-section-title">Уведомления</h2>
+                        </div>
+                        
+                        <div class="notification-item">
+                            <div class="notification-header">
+                                <div class="notification-title">Новое предложение</div>
+                                <div class="notification-time">2 часа назад</div>
+                            </div>
+                            <div class="notification-message">
+                                В вашем районе появилось новое предложение со скидкой 30% в кофейне Central
+                            </div>
+                        </div>
+                        
+                        <div class="notification-item">
+                            <div class="notification-header">
+                                <div class="notification-title">Объявление одобрено</div>
+                                <div class="notification-time">1 день назад</div>
+                            </div>
+                            <div class="notification-message">
+                                Ваше объявление "Кофейня Central" прошло модерацию и теперь видно всем пользователям
+                            </div>
+                        </div>
+                        
+                        <div class="notification-item">
+                            <div class="notification-header">
+                                <div class="notification-title">Добро пожаловать!</div>
+                                <div class="notification-time">3 дня назад</div>
+                            </div>
+                            <div class="notification-message">
+                                Спасибо за регистрацию в MapChap! Начните исследовать предложения рядом с вами.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Уведомление -->
+            <div class="notification" id="notification"></div>
+            
+            <!-- Loading Overlay -->
+            <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p id="loadingText">Загрузка предложений...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+// 🔧 КОНФИГУРАЦИЯ ПРИЛОЖЕНИЯ
+const CONFIG = {
+    // API endpoints
+    API_BASE_URL: 'https://d5djdb4t6ohnfrpfaaic.ql6wied2.apigw.yandexcloud.net',
+    
+    // API Keys
+    DADATA_API_KEY: 'b9ac888dede7c9492338e3bfa613a17290af0353',
+    YANDEX_MAPS_API_KEY: '07b74146-5f5a-46bf-a2b1-cf6d052a41bb',
+    
+    // Support
+    SUPPORT_PHONE: '+79998214758',
+    SUPPORT_TELEGRAM: '@Khabibullaevakhrorjon',
+    
+    // App settings
+    ADS_PER_PAGE: 10,
+    MAX_RETRY_ATTEMPTS: 3,
+    SYNC_INTERVAL: 30000,
+    HEALTH_CHECK_INTERVAL: 30000,
+    
+    // Map settings
+    DEFAULT_MAP_CENTER: [55.7558, 37.6173], // Москва
+    DEFAULT_ZOOM: 13,
+    MAP_LOAD_TIMEOUT: 10000,
+    
+    // Feature flags
+    ENABLE_OFFLINE_MODE: true,
+    ENABLE_AUTO_SYNC: true,
+    ENABLE_HEALTH_MONITORING: true
+};
+
+// 🔧 СИСТЕМА СИНХРОНИЗАЦИИ ДАННЫХ
+class DataSyncManager {
+    constructor() {
+        this.isSyncing = false;
+        this.syncQueue = [];
+        this.conflicts = [];
+        this.lastSyncTime = null;
+        this.syncInterval = CONFIG.SYNC_INTERVAL;
+        this.maxRetries = CONFIG.MAX_RETRY_ATTEMPTS;
+        this.syncTimer = null;
+        this.retryManager = new RetryManager();
+    }
+
+    // Инициализация системы синхронизации
+    initialize() {
+        this.loadSyncState();
+        this.startAutoSync();
+        this.updateSyncIndicator('syncing', 'Инициализация синхронизации...');
+    }
+
+    // Загрузка состояния синхронизации из localStorage
+    loadSyncState() {
+        try {
+            const savedState = localStorage.getItem('mapchap_sync_state');
+            if (savedState) {
+                const state = JSON.parse(savedState);
+                this.syncQueue = state.syncQueue || [];
+                this.conflicts = state.conflicts || [];
+                this.lastSyncTime = state.lastSyncTime;
+            }
+        } catch (error) {
+            console.error('Ошибка загрузки состояния синхронизации:', error);
+        }
+    }
+
+    // Сохранение состояния синхронизации в localStorage
+    saveSyncState() {
+        try {
+            const state = {
+                syncQueue: this.syncQueue,
+                conflicts: this.conflicts,
+                lastSyncTime: this.lastSyncTime,
+                savedAt: new Date().toISOString()
+            };
+            localStorage.setItem('mapchap_sync_state', JSON.stringify(state));
+        } catch (error) {
+            console.error('Ошибка сохранения состояния синхронизации:', error);
+        }
+    }
+
+    // Добавление операции в очередь синхронизации
+    addToSyncQueue(operation) {
+        const queueItem = {
+            id: this.generateId(),
+            type: operation.type,
+            data: operation.data,
+            timestamp: new Date().toISOString(),
+            retryCount: 0,
+            status: 'pending'
+        };
+
+        this.syncQueue.push(queueItem);
+        this.saveSyncState();
+        this.updateSyncIndicator();
+
+        if (apiHealthMonitor.isOnline) {
+            this.processSyncQueue();
+        }
+    }
+
+    // Обработка очереди синхронизации
+    async processSyncQueue() {
+        if (this.isSyncing || this.syncQueue.length === 0) return;
+
+        this.isSyncing = true;
+        this.updateSyncIndicator('syncing', 'Синхронизация данных...');
+
+        try {
+            const pendingItems = this.syncQueue.filter(item => item.status === 'pending');
+            
+            for (let i = 0; i < pendingItems.length; i++) {
+                const item = pendingItems[i];
+                await this.processSyncItem(item);
+                this.updateSyncProgress((i + 1) / pendingItems.length * 100);
+            }
+
+            this.lastSyncTime = new Date().toISOString();
+            this.updateSyncIndicator('success', 'Данные синхронизированы');
+            await this.checkForConflicts();
+
+        } catch (error) {
+            console.error('Ошибка синхронизации:', error);
+            this.updateSyncIndicator('error', 'Ошибка синхронизации');
+        } finally {
+            this.isSyncing = false;
+            this.saveSyncState();
+        }
+    }
+
+    // Обработка отдельного элемента очереди
+    async processSyncItem(item) {
+        try {
+            item.status = 'processing';
+            this.updateSyncIndicator();
+
+            let result;
+            
+            switch (item.type) {
+                case 'create_ad':
+                    result = await this.syncCreateAd(item.data);
+                    break;
+                case 'update_ad':
+                    result = await this.syncUpdateAd(item.data);
+                    break;
+                case 'delete_ad':
+                    result = await this.syncDeleteAd(item.data);
+                    break;
+                case 'favorite':
+                    result = await this.syncFavorite(item.data);
+                    break;
+                default:
+                    throw new Error(`Неизвестный тип операции: ${item.type}`);
+            }
+
+            if (result.success) {
+                item.status = 'completed';
+                this.syncQueue = this.syncQueue.filter(q => q.id !== item.id);
+            } else {
+                throw new Error(result.error || 'Неизвестная ошибка');
+            }
+
+        } catch (error) {
+            console.error(`Ошибка синхронизации операции ${item.type}:`, error);
+            
+            item.retryCount++;
+            if (item.retryCount >= this.maxRetries) {
+                item.status = 'failed';
+                item.error = error.message;
+            } else {
+                item.status = 'pending';
+                setTimeout(() => this.processSyncQueue(), Math.pow(2, item.retryCount) * 1000);
+            }
+        }
+    }
+
+    // Синхронизация создания объявления
+    async syncCreateAd(adData) {
+        return await apiRequest('/ads', {
+            method: 'POST',
+            body: JSON.stringify(adData)
+        }, 'Синхронизация создания объявления');
+    }
+
+    // Синхронизация обновления объявления
+    async syncUpdateAd(adData) {
+        return await apiRequest(`/ads/${adData.id}`, {
+            method: 'PUT',
+            body: JSON.stringify(adData)
+        }, 'Синхронизация обновления объявления');
+    }
+
+    // Синхронизация удаления объявления
+    async syncDeleteAd(adId) {
+        return await apiRequest(`/ads/${adId}`, {
+            method: 'DELETE'
+        }, 'Синхронизация удаления объявления');
+    }
+
+    // Синхронизация избранного
+    async syncFavorite(favoriteData) {
+        return await apiRequest('/favorites', {
+            method: 'POST',
+            body: JSON.stringify(favoriteData)
+        }, 'Синхронизация избранного');
+    }
+
+    // Проверка конфликтов данных
+    async checkForConflicts() {
+        try {
+            const localAds = JSON.parse(localStorage.getItem('userAds') || '[]');
+            const serverAds = await apiRequest('/ads?user_id=current', {}, 'Проверка конфликтов');
+
+            this.conflicts = [];
+
+            for (const localAd of localAds) {
+                const serverAd = serverAds.find(ad => ad.id === localAd.id);
+                
+                if (serverAd) {
+                    const differences = this.findDifferences(localAd, serverAd);
+                    
+                    if (differences.length > 0) {
+                        this.conflicts.push({
+                            id: localAd.id,
+                            type: 'ad_update',
+                            local: localAd,
+                            server: serverAd,
+                            differences: differences,
+                            resolved: false
+                        });
+                    }
+                }
+            }
+
+            if (this.conflicts.length > 0) {
+                this.showConflictResolution();
+            }
+
+            this.updateSyncIndicator();
+
+        } catch (error) {
+            console.error('Ошибка проверки конфликтов:', error);
+        }
+    }
+
+    // Поиск различий между объектами
+    findDifferences(obj1, obj2) {
+        const differences = [];
+        const allKeys = new Set([...Object.keys(obj1), ...Object.keys(obj2)]);
+
+        for (const key of allKeys) {
+            if (obj1[key] !== obj2[key]) {
+                differences.push({
+                    field: key,
+                    local: obj1[key],
+                    server: obj2[key]
+                });
+            }
+        }
+
+        return differences;
+    }
+
+    // Разрешение конфликта
+    resolveConflict(conflictId, resolution) {
+        const conflict = this.conflicts.find(c => c.id === conflictId);
+        if (!conflict) return;
+
+        conflict.resolved = true;
+        conflict.resolution = resolution;
+
+        if (resolution === 'server') {
+            this.updateLocalAd(conflict.server);
+        } else if (resolution === 'local') {
+            this.addToSyncQueue({
+                type: 'update_ad',
+                data: conflict.local
+            });
+        }
+
+        this.saveSyncState();
+        this.updateSyncIndicator();
+
+        if (this.conflicts.every(c => c.resolved)) {
+            this.conflicts = [];
+            this.hideConflictResolution();
+        }
+    }
+
+    // Разрешение всех конфликтов
+    resolveAllConflicts(resolution) {
+        this.conflicts.forEach(conflict => {
+            this.resolveConflict(conflict.id, resolution);
+        });
+    }
+
+    // Обновление локального объявления
+    updateLocalAd(adData) {
+        const localAds = JSON.parse(localStorage.getItem('userAds') || '[]');
+        const index = localAds.findIndex(ad => ad.id === adData.id);
+        
+        if (index !== -1) {
+            localAds[index] = { ...localAds[index], ...adData };
+            localStorage.setItem('userAds', JSON.stringify(localAds));
+            
+            if (typeof loadUserAds === 'function') {
+                loadUserAds(currentAdsFilter, true);
+            }
+        }
+    }
+
+    // Показать интерфейс разрешения конфликтов
+    showConflictResolution() {
+        const modal = document.getElementById('conflictResolutionModal');
+        const conflictsList = document.getElementById('conflictsList');
+        
+        if (!modal || !conflictsList) return;
+
+        conflictsList.innerHTML = '';
+
+        this.conflicts.filter(c => !c.resolved).forEach(conflict => {
+            const conflictElement = document.createElement('div');
+            conflictElement.className = 'conflict-item';
+            conflictElement.innerHTML = this.renderConflict(conflict);
+            conflictsList.appendChild(conflictElement);
+        });
+
+        modal.classList.add('active');
+    }
+
+    // Скрыть интерфейс разрешения конфликтов
+    hideConflictResolution() {
+        const modal = document.getElementById('conflictResolutionModal');
+        if (modal) {
+            modal.classList.remove('active');
+        }
+    }
+
+    // Рендер конфликта для UI
+    renderConflict(conflict) {
+        return `
+            <div class="conflict-header">
+                <div class="conflict-title">${conflict.local.name}</div>
+                <div class="conflict-actions">
+                    <button class="conflict-action-btn use-server" onclick="dataSyncManager.resolveConflict('${conflict.id}', 'server')">
+                        Сервер
+                    </button>
+                    <button class="conflict-action-btn keep-local" onclick="dataSyncManager.resolveConflict('${conflict.id}', 'local')">
+                        Локально
+                    </button>
+                </div>
+            </div>
+            <div class="conflict-details">
+                <div class="conflict-version local">
+                    <div class="conflict-version-title">Локальная версия</div>
+                    ${conflict.differences.map(diff => `
+                        <div class="conflict-field ${diff.local !== diff.server ? 'changed' : ''}">
+                            <span>${this.getFieldLabel(diff.field)}:</span>
+                            <span>${this.formatFieldValue(diff.field, diff.local)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+                <div class="conflict-version server">
+                    <div class="conflict-version-title">Серверная версия</div>
+                    ${conflict.differences.map(diff => `
+                        <div class="conflict-field ${diff.local !== diff.server ? 'changed' : ''}">
+                            <span>${this.getFieldLabel(diff.field)}:</span>
+                            <span>${this.formatFieldValue(diff.field, diff.server)}</span>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+
+    // Получение читаемого имени поля
+    getFieldLabel(field) {
+        const labels = {
+            'name': 'Название',
+            'description': 'Описание',
+            'discount': 'Скидка',
+            'address': 'Адрес',
+            'phone': 'Телефон',
+            'time': 'Время работы',
+            'category': 'Категория',
+            'status': 'Статус'
+        };
+        return labels[field] || field;
+    }
+
+    // Форматирование значения поля
+    formatFieldValue(field, value) {
+        if (value === null || value === undefined) return '-';
+        if (typeof value === 'boolean') return value ? 'Да' : 'Нет';
+        return String(value);
+    }
+
+    // Обновление индикатора синхронизации
+    updateSyncIndicator(status = null, text = null) {
+        const indicator = document.getElementById('syncIndicator');
+        const statusDot = document.getElementById('syncStatusDot');
+        const statusText = document.getElementById('syncStatusText');
+        const statusDetail = document.getElementById('syncStatusDetail');
+        const queueSizeDetail = document.getElementById('queueSizeDetail');
+        const conflictsDetail = document.getElementById('conflictsDetail');
+        const lastSyncDetail = document.getElementById('lastSyncDetail');
+
+        if (!indicator) return;
+
+        if (!status) {
+            if (!apiHealthMonitor.isOnline) {
+                status = 'offline';
+            } else if (this.isSyncing) {
+                status = 'syncing';
+            } else if (this.syncQueue.length > 0) {
+                status = 'syncing';
+            } else if (this.conflicts.length > 0) {
+                status = 'error';
+            } else {
+                status = 'success';
+            }
+        }
+
+        indicator.className = 'sync-indicator';
+        statusDot.className = 'sync-status-dot';
+        
+        switch(status) {
+            case 'syncing':
+                indicator.classList.add('syncing');
+                statusDot.classList.add('syncing');
+                statusText.textContent = text || 'Синхронизация...';
+                break;
+            case 'success':
+                indicator.classList.add('success');
+                statusDot.classList.add('success');
+                statusText.textContent = text || 'Синхронизировано';
+                break;
+            case 'error':
+                indicator.classList.add('error');
+                statusDot.classList.add('error');
+                statusText.textContent = text || 'Есть конфликты';
+                break;
+            case 'offline':
+                indicator.classList.add('offline');
+                statusDot.classList.add('offline');
+                statusText.textContent = text || 'Оффлайн';
+                break;
+        }
+
+        if (statusDetail) {
+            statusDetail.textContent = this.getStatusText(status);
+            statusDetail.className = `sync-metric-value ${status}`;
+        }
+        if (queueSizeDetail) {
+            queueSizeDetail.textContent = this.syncQueue.length;
+        }
+        if (conflictsDetail) {
+            conflictsDetail.textContent = this.conflicts.filter(c => !c.resolved).length;
+        }
+        if (lastSyncDetail) {
+            lastSyncDetail.textContent = this.lastSyncTime ? 
+                new Date(this.lastSyncTime).toLocaleTimeString() : 'Никогда';
+        }
+    }
+
+    // Обновление прогресса синхронизации
+    updateSyncProgress(percent) {
+        const progressBar = document.getElementById('syncProgressBar');
+        if (progressBar) {
+            progressBar.style.width = `${percent}%`;
+        }
+    }
+
+    // Получение текстового описания статуса
+    getStatusText(status) {
+        switch(status) {
+            case 'syncing': return '🔄 Синхронизация';
+            case 'success': return '✅ Успешно';
+            case 'error': return '❌ Конфликты';
+            case 'offline': return '🌐 Оффлайн';
+            default: return '❓ Неизвестно';
+        }
+    }
+
+    // Запуск автоматической синхронизации
+    startAutoSync() {
+        window.addEventListener('online', () => {
+            this.updateSyncIndicator('syncing', 'Восстановление соединения...');
+            setTimeout(() => this.processSyncQueue(), 1000);
+        });
+
+        this.syncTimer = setInterval(() => {
+            if (apiHealthMonitor.isOnline && this.syncQueue.length > 0) {
+                this.processSyncQueue();
+            }
+        }, this.syncInterval);
+
+        if (apiHealthMonitor.isOnline) {
+            setTimeout(() => this.processSyncQueue(), 3000);
+        }
+    }
+
+    // Остановка автоматической синхронизации
+    stopAutoSync() {
+        if (this.syncTimer) {
+            clearInterval(this.syncTimer);
+        }
+    }
+
+    // Генерация ID для операций
+    generateId() {
+        return Date.now().toString(36) + Math.random().toString(36).substr(2);
+    }
+
+    // Получение статистики синхронизации
+    getStats() {
+        return {
+            queueSize: this.syncQueue.length,
+            pending: this.syncQueue.filter(item => item.status === 'pending').length,
+            processing: this.syncQueue.filter(item => item.status === 'processing').length,
+            completed: this.syncQueue.filter(item => item.status === 'completed').length,
+            failed: this.syncQueue.filter(item => item.status === 'failed').length,
+            conflicts: this.conflicts.length,
+            unresolvedConflicts: this.conflicts.filter(c => !c.resolved).length,
+            lastSync: this.lastSyncTime,
+            isSyncing: this.isSyncing
+        };
+    }
+}
+
+// 🔧 УЛУЧШЕННАЯ СИСТЕМА ПОВТОРНЫХ ПОПЫТОК
+class RetryManager {
+    constructor() {
+        this.maxRetries = CONFIG.MAX_RETRY_ATTEMPTS;
+        this.baseDelay = 1000;
+        this.maxDelay = 10000;
+        this.currentRetries = 0;
+        this.retryStats = {
+            totalRequests: 0,
+            failedRequests: 0,
+            successfulRetries: 0,
+            lastError: null,
+            lastSuccess: null
+        };
+    }
+
+    // Экспоненциальная задержка с джиттером
+    calculateDelay(retryCount) {
+        const delay = Math.min(this.baseDelay * Math.pow(2, retryCount), this.maxDelay);
+        const jitter = delay * 0.1 * Math.random();
+        return delay + jitter;
+    }
+
+    // Универсальная функция с повторными попытками
+    async fetchWithRetry(url, options = {}, operationName = 'Операция') {
+        this.retryStats.totalRequests++;
+        this.currentRetries = 0;
+
+        const showRetryNotification = (retryCount, maxRetries, delay) => {
+            const notification = document.getElementById('retryNotification');
+            const retryMessage = document.getElementById('retryMessage');
+            const retryCountElement = document.getElementById('retryCount');
+            
+            if (notification && retryMessage && retryCountElement) {
+                retryMessage.textContent = `${operationName} не удалась. Повторная попытка...`;
+                retryCountElement.textContent = `Попытка ${retryCount + 1}/${maxRetries}`;
+                notification.style.display = 'flex';
+            }
+        };
+
+        const hideRetryNotification = () => {
+            const notification = document.getElementById('retryNotification');
+            if (notification) {
+                notification.style.display = 'none';
+            }
+        };
+
+        const updateConnectionQuality = (quality) => {
+            const connectionQuality = document.getElementById('connectionQuality');
+            const qualityText = document.getElementById('connectionQualityText');
+            
+            if (connectionQuality && qualityText) {
+                connectionQuality.style.display = 'flex';
+                connectionQuality.className = `connection-quality ${quality}`;
+                
+                switch(quality) {
+                    case 'good':
+                        qualityText.textContent = 'Хорошее';
+                        break;
+                    case 'poor':
+                        qualityText.textContent = 'Среднее';
+                        break;
+                    case 'bad':
+                        qualityText.textContent = 'Плохое';
+                        break;
+                }
+            }
+        };
+
+        for (let attempt = 0; attempt <= this.maxRetries; attempt++) {
+            try {
+                this.currentRetries = attempt;
+                
+                if (attempt > 0) {
+                    showRetryNotification(attempt, this.maxRetries, this.calculateDelay(attempt));
+                    await this.delay(this.calculateDelay(attempt));
+                }
+
+                const startTime = Date.now();
+                const response = await fetch(url, {
+                    timeout: 10000,
+                    ...options
+                });
+
+                const responseTime = Date.now() - startTime;
+                
+                if (responseTime < 1000) {
+                    updateConnectionQuality('good');
+                } else if (responseTime < 3000) {
+                    updateConnectionQuality('poor');
+                } else {
+                    updateConnectionQuality('bad');
+                }
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                hideRetryNotification();
+                this.retryStats.lastSuccess = new Date().toISOString();
+                
+                if (attempt > 0) {
+                    this.retryStats.successfulRetries++;
+                    showNotification(`${operationName} успешно выполнена после ${attempt} попыток`, 'success');
+                }
+
+                return await response.json();
+
+            } catch (error) {
+                this.retryStats.failedRequests++;
+                this.retryStats.lastError = {
+                    error: error.message,
+                    timestamp: new Date().toISOString(),
+                    attempt: attempt
+                };
+
+                console.warn(`Попытка ${attempt + 1}/${this.maxRetries + 1} не удалась:`, error);
+
+                if (attempt === this.maxRetries) {
+                    hideRetryNotification();
+                    this.handleFinalError(error, operationName);
+                    throw this.enrichError(error, attempt);
+                }
+
+                if (this.shouldNotRetry(error)) {
+                    hideRetryNotification();
+                    throw this.enrichError(error, attempt);
+                }
+            }
+        }
+    }
+
+    // Задержка выполнения
+    delay(ms) {
+        return new Promise(resolve => setTimeout(resolve, ms));
+    }
+
+    // Определяем, нужно ли пропустить повторные попытки
+    shouldNotRetry(error) {
+        const noRetryErrors = ['400', '401', '403', '404', '422'];
+        return noRetryErrors.some(code => error.message.includes(code));
+    }
+
+    // Обработка окончательной ошибки
+    handleFinalError(error, operationName) {
+        console.error(`Все попытки ${operationName} не удались:`, error);
+        
+        let userMessage = 'Не удалось выполнить операцию. ';
+        
+        if (error.message.includes('network') || error.message.includes('Failed to fetch')) {
+            userMessage += 'Проверьте подключение к интернету.';
+        } else if (error.message.includes('timeout')) {
+            userMessage += 'Сервер не отвечает. Попробуйте позже.';
+        } else {
+            userMessage += 'Попробуйте позже или обратитесь в поддержку.';
+        }
+
+        showNotification(userMessage, 'error', 5000);
+        this.showRetryStats();
+    }
+
+    // Обогащение ошибки дополнительной информацией
+    enrichError(originalError, attempts) {
+        const enrichedError = new Error(
+            `${originalError.message} (Попыток: ${attempts + 1})`
+        );
+        enrichedError.originalError = originalError;
+        enrichedError.attempts = attempts + 1;
+        enrichedError.timestamp = new Date().toISOString();
+        return enrichedError;
+    }
+
+    // Показать статистику повторных попыток
+    showRetryStats() {
+        const stats = this.getStats();
+        console.log('Статистика повторных попыток:', stats);
+        
+        if (stats.failedRequests > stats.totalRequests * 0.5) {
+            showNotification('Проблемы с подключением. Часть функций может работать некорректно.', 'warning', 3000);
+        }
+    }
+
+    // Получить статистику
+    getStats() {
+        return {
+            ...this.retryStats,
+            successRate: ((this.retryStats.totalRequests - this.retryStats.failedRequests) / this.retryStats.totalRequests * 100).toFixed(1),
+            currentRetries: this.currentRetries
+        };
+    }
+
+    // Сброс статистики
+    resetStats() {
+        this.retryStats = {
+            totalRequests: 0,
+            failedRequests: 0,
+            successfulRetries: 0,
+            lastError: null,
+            lastSuccess: null
+        };
+    }
+}
+
+// 🔧 СИСТЕМА МОНИТОРИНГА ЗДОРОВЬЯ API
+class APIHealthMonitor {
+    constructor() {
+        this.status = 'unknown';
+        this.lastCheck = null;
+        this.responseTime = 0;
+        this.errorCount = 0;
+        this.retryCount = 0;
+        this.maxRetries = CONFIG.MAX_RETRY_ATTEMPTS;
+        this.checkInterval = CONFIG.HEALTH_CHECK_INTERVAL;
+        this.isOnline = false;
+        this.healthCheckTimer = null;
+        this.retryManager = new RetryManager();
+    }
+
+    async checkAPIHealth() {
+        const startTime = Date.now();
+        
+        try {
+            const data = await this.retryManager.fetchWithRetry(
+                `${CONFIG.API_BASE_URL}/health`,
+                {
+                    method: 'GET',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    }
+                },
+                'Проверка здоровья API'
+            );
+
+            this.responseTime = Date.now() - startTime;
+            this.status = 'online';
+            this.isOnline = true;
+            this.errorCount = 0;
+            this.retryCount = 0;
+            this.updateHealthIndicator('online', `Время ответа: ${this.responseTime}мс`);
+            return true;
+            
+        } catch (error) {
+            this.responseTime = Date.now() - startTime;
+            this.errorCount++;
+            this.retryCount++;
+            
+            if (this.retryCount <= this.maxRetries) {
+                this.status = 'connecting';
+                this.updateHealthIndicator('connecting', `Попытка подключения ${this.retryCount}/${this.maxRetries}`);
+                setTimeout(() => this.checkAPIHealth(), 5000);
+            } else {
+                this.status = 'offline';
+                this.isOnline = false;
+                this.updateHealthIndicator('offline', 'Сервер недоступен');
+                this.enableOfflineMode();
+            }
+            
+            console.error('API Health Check failed:', error);
+            return false;
+        } finally {
+            this.lastCheck = new Date().toLocaleTimeString();
+            this.updateHealthDetails();
+        }
+    }
+
+    updateHealthIndicator(status, message) {
+        const indicator = document.getElementById('apiHealthIndicator');
+        const statusDot = document.getElementById('healthStatusDot');
+        const statusText = document.getElementById('healthStatusText');
+        const retryBtn = document.getElementById('apiRetryBtn');
+        const offlineBanner = document.getElementById('offlineModeBanner');
+
+        if (!indicator) return;
+
+        indicator.className = 'api-health-indicator';
+        statusDot.className = 'health-status-dot';
+        
+        switch(status) {
+            case 'online':
+                indicator.classList.add('online');
+                statusDot.classList.add('online');
+                statusText.textContent = 'API онлайн';
+                retryBtn.style.display = 'none';
+                offlineBanner.style.display = 'none';
+                break;
+            case 'connecting':
+                indicator.classList.add('connecting');
+                statusDot.classList.add('connecting');
+                statusText.textContent = message || 'Подключение...';
+                retryBtn.style.display = 'none';
+                offlineBanner.style.display = 'none';
+                break;
+            case 'offline':
+                indicator.classList.add('offline');
+                statusDot.classList.add('offline');
+                statusText.textContent = 'API оффлайн';
+                retryBtn.style.display = 'block';
+                offlineBanner.style.display = 'flex';
+                break;
+        }
+    }
+
+    updateHealthDetails() {
+        const statusDetail = document.getElementById('healthStatusDetail');
+        const responseTimeDetail = document.getElementById('responseTimeDetail');
+        const lastCheckDetail = document.getElementById('lastCheckDetail');
+        const errorCountDetail = document.getElementById('errorCountDetail');
+
+        if (statusDetail) {
+            statusDetail.textContent = this.getStatusText();
+            statusDetail.className = `health-metric-value ${this.status}`;
+        }
+        if (responseTimeDetail) {
+            responseTimeDetail.textContent = `${this.responseTime}мс`;
+        }
+        if (lastCheckDetail) {
+            lastCheckDetail.textContent = this.lastCheck || '-';
+        }
+        if (errorCountDetail) {
+            errorCountDetail.textContent = this.errorCount;
+        }
+    }
+
+    getStatusText() {
+        switch(this.status) {
+            case 'online': return '✅ Онлайн';
+            case 'connecting': return '🔄 Подключение';
+            case 'offline': return '❌ Оффлайн';
+            default: return '❓ Неизвестно';
+        }
+    }
+
+    enableOfflineMode() {
+        this.showOfflineNotification();
+        this.updateUIForOfflineMode();
+    }
+
+    showOfflineNotification() {
+        const notification = document.getElementById('notification');
+        if (notification) {
+            notification.innerHTML = '⚠️ Автономный режим. Используются локальные данные.';
+            notification.className = 'notification warning show';
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 5000);
+        }
+    }
+
+    updateUIForOfflineMode() {
+        this.addOfflineNotices();
+        this.disableOnlineFeatures();
+    }
+
+    addOfflineNotices() {
+        const sections = ['create-ad', 'my-ads', 'analytics'];
+        
+        sections.forEach(section => {
+            const sectionElement = document.getElementById(section);
+            if (sectionElement && !sectionElement.querySelector('.api-degradation-notice')) {
+                const notice = document.createElement('div');
+                notice.className = 'api-degradation-notice';
+                notice.innerHTML = `
+                    <i class="fas fa-wifi-slash"></i>
+                    <span>Автономный режим. Некоторые функции могут быть недоступны.</span>
+                `;
+                sectionElement.insertBefore(notice, sectionElement.firstChild);
+            }
+        });
+    }
+
+    disableOnlineFeatures() {
+        const onlineButtons = ['confirmAdBtn', 'telegramAuthBtn'];
+        
+        onlineButtons.forEach(btnId => {
+            const button = document.getElementById(btnId);
+            if (button) {
+                button.disabled = true;
+                button.title = 'Функция недоступна в автономном режиме';
+            }
+        });
+    }
+
+    startMonitoring() {
+        this.checkAPIHealth();
+        
+        this.healthCheckTimer = setInterval(() => {
+            this.checkAPIHealth();
+        }, this.checkInterval);
+    }
+
+    stopMonitoring() {
+        if (this.healthCheckTimer) {
+            clearInterval(this.healthCheckTimer);
+        }
+    }
+
+    async retryConnection() {
+        this.retryCount = 0;
+        this.updateHealthIndicator('connecting', 'Повторное подключение...');
+        await this.checkAPIHealth();
+    }
+
+    async ensureAPIAvailability(operation) {
+        if (!this.isOnline) {
+            throw new Error('API недоступен. Пожалуйста, проверьте подключение к интернету.');
+        }
+        
+        const isHealthy = await this.quickHealthCheck();
+        if (!isHealthy) {
+            throw new Error('Сервер временно недоступен. Попробуйте позже.');
+        }
+        
+        return true;
+    }
+
+    async quickHealthCheck() {
+        try {
+            const response = await fetch(`${CONFIG.API_BASE_URL}/health`, {
+                method: 'HEAD',
+                timeout: 5000
+            });
+            return response.ok;
+        } catch (error) {
+            return false;
+        }
+    }
+}
+// 🔧 ЧАСТЬ 3: РАСШИРЕННАЯ JAVASCRIPT ЛОГИКА
+
+// 📋 СИСТЕМА МОДЕРАЦИИ
+class ModerationSystem {
+    constructor() {
+        this.currentPage = 1;
+        this.adsPerPage = 10;
+        this.totalModerationAds = 0;
+        this.filters = {
+            status: 'pending',
+            search: '',
+            category: '',
+            dateFrom: '',
+            dateTo: ''
+        };
+    }
+
+    // Проверка прав модератора
+    async checkModeratorRights() {
+        try {
+            const userData = JSON.parse(localStorage.getItem('userData') || '{}');
+            if (!userData.id) return false;
+
+            const response = await apiRequest('/users/me/permissions', {
+                method: 'GET'
+            }, 'Проверка прав модератора');
+
+            return response.isModerator || response.isAdmin || false;
+        } catch (error) {
+            console.error('Ошибка проверки прав модератора:', error);
+            return false;
+        }
+    }
+
+    // Загрузка объявлений для модерации
+    async loadModerationAds(page = 1, refresh = false) {
+        try {
+            if (refresh) {
+                this.currentPage = 1;
+            }
+
+            showLoading('Загрузка объявлений для модерации...');
+
+            const queryParams = new URLSearchParams({
+                page: this.currentPage,
+                limit: this.adsPerPage,
+                status: this.filters.status,
+                search: this.filters.search,
+                category: this.filters.category,
+                date_from: this.filters.dateFrom,
+                date_to: this.filters.dateTo
+            });
+
+            const response = await apiRequest(`/moderation/ads?${queryParams}`, {
+                method: 'GET'
+            }, 'Загрузка модерации');
+
+            this.totalModerationAds = response.total;
+            this.renderModerationList(response.ads);
+            this.updateModerationStats(response.stats);
+
+            // Показать/скрыть кнопку загрузки еще
+            const loadMoreBtn = document.getElementById('loadMoreModeration');
+            if (loadMoreBtn) {
+                if (response.ads.length >= this.adsPerPage && (this.currentPage * this.adsPerPage) < response.total) {
+                    loadMoreBtn.style.display = 'block';
+                } else {
+                    loadMoreBtn.style.display = 'none';
+                }
+            }
+
+            hideLoading();
+            return response;
+
+        } catch (error) {
+            console.error('Ошибка загрузки модерации:', error);
+            hideLoading();
+            showNotification('Ошибка загрузки объявлений для модерации', 'error');
+            return { ads: [], total: 0, stats: {} };
+        }
+    }
+
+    // Рендер списка модерации
+    renderModerationList(ads) {
+        const moderationList = document.getElementById('moderationList');
+        if (!moderationList) return;
+
+        if (this.currentPage === 1) {
+            moderationList.innerHTML = '';
+        }
+
+        if (ads.length === 0) {
+            moderationList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-check-circle"></i>
+                    <p>Нет объявлений для проверки</p>
+                </div>
+            `;
+            return;
+        }
+
+        ads.forEach(ad => {
+            const adElement = this.createModerationAdElement(ad);
+            moderationList.appendChild(adElement);
+        });
+    }
+
+    // Создание элемента объявления для модерации
+    createModerationAdElement(ad) {
+        const adElement = document.createElement('div');
+        adElement.className = 'moderation-ad-item';
+        adElement.innerHTML = `
+            <div class="moderation-ad-header">
+                <div class="moderation-ad-title">${this.escapeHtml(ad.name)}</div>
+                <div class="moderation-ad-meta">
+                    <span class="moderation-ad-id">ID: ${ad.id}</span>
+                    <span class="moderation-ad-date">${this.formatDate(ad.created_at)}</span>
+                </div>
+            </div>
+            
+            <div class="moderation-ad-content">
+                <div class="moderation-ad-field">
+                    <label>Категория:</label>
+                    <span>${this.getCategoryLabel(ad.category)}</span>
+                </div>
+                <div class="moderation-ad-field">
+                    <label>Адрес:</label>
+                    <span>${this.escapeHtml(ad.address)}</span>
+                </div>
+                <div class="moderation-ad-field">
+                    <label>Телефон:</label>
+                    <span>${ad.phone}</span>
+                </div>
+                <div class="moderation-ad-field">
+                    <label>Скидка:</label>
+                    <span class="discount-badge">${ad.discount}%</span>
+                </div>
+                <div class="moderation-ad-field full-width">
+                    <label>Описание:</label>
+                    <span>${this.escapeHtml(ad.description)}</span>
+                </div>
+                
+                ${ad.business_info ? `
+                <div class="moderation-ad-field full-width">
+                    <label>Информация о бизнесе:</label>
+                    <div class="business-info">
+                        ${Object.entries(ad.business_info).map(([key, value]) => `
+                            <div class="business-info-item">
+                                <strong>${this.getBusinessInfoLabel(key)}:</strong> ${value}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+                
+                ${ad.verification_data ? `
+                <div class="moderation-ad-field full-width">
+                    <label>Данные верификации:</label>
+                    <div class="verification-data">
+                        ${Object.entries(ad.verification_data).map(([key, value]) => `
+                            <div class="verification-item">
+                                <strong>${this.getVerificationLabel(key)}:</strong> ${value}
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+                ` : ''}
+            </div>
+            
+            <div class="moderation-ad-actions">
+                <button class="moderation-btn approve" onclick="moderationSystem.approveAd('${ad.id}')">
+                    <i class="fas fa-check"></i> Одобрить
+                </button>
+                <button class="moderation-btn reject" onclick="moderationSystem.showRejectionModal('${ad.id}')">
+                    <i class="fas fa-times"></i> Отклонить
+                </button>
+                <button class="moderation-btn details" onclick="moderationSystem.showAdDetails('${ad.id}')">
+                    <i class="fas fa-info-circle"></i> Подробности
+                </button>
+            </div>
+        `;
+
+        return adElement;
+    }
+
+    // Одобрение объявления
+    async approveAd(adId) {
+        try {
+            showLoading('Одобрение объявления...');
+
+            const response = await apiRequest(`/moderation/ads/${adId}/approve`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    moderator_notes: 'Проверено и одобрено'
+                })
+            }, 'Одобрение объявления');
+
+            showNotification('Объявление успешно одобрено', 'success');
+            
+            // Обновить список
+            await this.loadModerationAds(this.currentPage, true);
+            
+            // Обновить статистику
+            await this.updateModerationDashboardStats();
+
+            return response;
+
+        } catch (error) {
+            console.error('Ошибка одобрения объявления:', error);
+            hideLoading();
+            showNotification('Ошибка при одобрении объявления', 'error');
+            throw error;
+        }
+    }
+
+    // Отклонение объявления
+    async rejectAd(adId, reason, notes = '') {
+        try {
+            showLoading('Отклонение объявления...');
+
+            const response = await apiRequest(`/moderation/ads/${adId}/reject`, {
+                method: 'POST',
+                body: JSON.stringify({
+                    reason: reason,
+                    moderator_notes: notes,
+                    rejection_date: new Date().toISOString()
+                })
+            }, 'Отклонение объявления');
+
+            showNotification('Объявление отклонено', 'warning');
+            
+            // Обновить список
+            await this.loadModerationAds(this.currentPage, true);
+            
+            // Обновить статистику
+            await this.updateModerationDashboardStats();
+
+            return response;
+
+        } catch (error) {
+            console.error('Ошибка отклонения объявления:', error);
+            hideLoading();
+            showNotification('Ошибка при отклонении объявления', 'error');
+            throw error;
+        }
+    }
+
+    // Показать модальное окно отклонения
+    showRejectionModal(adId) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay active';
+        modal.innerHTML = `
+            <div class="modal-content rejection-modal">
+                <div class="modal-header">
+                    <h3>Отклонение объявления</h3>
+                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="form-group">
+                        <label class="form-label">Причина отклонения *</label>
+                        <select class="form-select" id="rejectionReason">
+                            <option value="">Выберите причину</option>
+                            <option value="fake_business">Фейковый бизнес</option>
+                            <option value="wrong_category">Неверная категория</option>
+                            <option value="invalid_contact">Неверные контакты</option>
+                            <option value="inappropriate_content">Несоответствующий контент</option>
+                            <option value="duplicate">Дубликат</option>
+                            <option value="other">Другое</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Комментарий для автора</label>
+                        <textarea class="form-textarea" id="rejectionNotes" 
+                                  placeholder="Укажите подробности отклонения..."></textarea>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button class="btn-secondary" onclick="this.closest('.modal-overlay').remove()">Отмена</button>
+                    <button class="btn-primary danger" onclick="moderationSystem.confirmRejection('${adId}')">Отклонить</button>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    }
+
+    // Подтверждение отклонения
+    async confirmRejection(adId) {
+        const reason = document.getElementById('rejectionReason').value;
+        const notes = document.getElementById('rejectionNotes').value;
+
+        if (!reason) {
+            showNotification('Выберите причину отклонения', 'error');
+            return;
+        }
+
+        await this.rejectAd(adId, reason, notes);
+        
+        // Закрыть модальное окно
+        const modal = document.querySelector('.rejection-modal').closest('.modal-overlay');
+        if (modal) {
+            modal.remove();
+        }
+    }
+
+    // Показать детали объявления
+    async showAdDetails(adId) {
+        try {
+            showLoading('Загрузка деталей...');
+
+            const response = await apiRequest(`/moderation/ads/${adId}`, {
+                method: 'GET'
+            }, 'Загрузка деталей объявления');
+
+            this.showAdDetailsModal(response);
+
+        } catch (error) {
+            console.error('Ошибка загрузки деталей:', error);
+            hideLoading();
+            showNotification('Ошибка загрузки деталей объявления', 'error');
+        }
+    }
+
+    // Модальное окно деталей объявления
+    showAdDetailsModal(ad) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay active';
+        modal.innerHTML = `
+            <div class="modal-content ad-details-modal">
+                <div class="modal-header">
+                    <h3>Детали объявления #${ad.id}</h3>
+                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body">
+                    <div class="ad-details-grid">
+                        <div class="detail-item">
+                            <label>Статус:</label>
+                            <span class="status-badge ${ad.status}">${this.getStatusLabel(ad.status)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Создано:</label>
+                            <span>${this.formatDate(ad.created_at)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Обновлено:</label>
+                            <span>${this.formatDate(ad.updated_at)}</span>
+                        </div>
+                        <div class="detail-item">
+                            <label>Автор:</label>
+                            <span>${ad.author_name || 'Неизвестно'}</span>
+                        </div>
+                    </div>
+                    
+                    <div class="detail-section">
+                        <h4>Контент объявления</h4>
+                        <div class="detail-content">
+                            <p><strong>Название:</strong> ${this.escapeHtml(ad.name)}</p>
+                            <p><strong>Описание:</strong> ${this.escapeHtml(ad.description)}</p>
+                            <p><strong>Категория:</strong> ${this.getCategoryLabel(ad.category)}</p>
+                            <p><strong>Скидка:</strong> ${ad.discount}%</p>
+                            <p><strong>Адрес:</strong> ${this.escapeHtml(ad.address)}</p>
+                            <p><strong>Телефон:</strong> ${ad.phone}</p>
+                        </div>
+                    </div>
+                    
+                    ${ad.moderation_history ? `
+                    <div class="detail-section">
+                        <h4>История модерации</h4>
+                        <div class="moderation-history">
+                            ${ad.moderation_history.map(entry => `
+                                <div class="history-item">
+                                    <div class="history-date">${this.formatDate(entry.date)}</div>
+                                    <div class="history-action ${entry.action}">${this.getActionLabel(entry.action)}</div>
+                                    <div class="history-moderator">${entry.moderator}</div>
+                                    ${entry.notes ? `<div class="history-notes">${this.escapeHtml(entry.notes)}</div>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    </div>
+                    ` : ''}
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    }
+
+    // Обновление статистики модерации
+    updateModerationStats(stats) {
+        const totalElement = document.getElementById('moderationTotal');
+        const approvedElement = document.getElementById('moderationApproved');
+        const rejectedElement = document.getElementById('moderationRejected');
+
+        if (totalElement) totalElement.textContent = stats.pending || 0;
+        if (approvedElement) approvedElement.textContent = stats.approved_today || 0;
+        if (rejectedElement) rejectedElement.textContent = stats.rejected_today || 0;
+    }
+
+    // Обновление статистики дашборда
+    async updateModerationDashboardStats() {
+        try {
+            const response = await apiRequest('/moderation/stats/dashboard', {
+                method: 'GET'
+            }, 'Загрузка статистики дашборда');
+
+            this.renderModerationCharts(response);
+
+        } catch (error) {
+            console.error('Ошибка загрузки статистики дашборда:', error);
+        }
+    }
+
+    // Рендер графиков модерации
+    renderModerationCharts(stats) {
+        // Реализация графиков с использованием Chart.js или аналогичной библиотеки
+        if (typeof Chart !== 'undefined' && stats.chart_data) {
+            this.renderApprovalChart(stats.chart_data.approval_rates);
+            this.renderCategoryChart(stats.chart_data.categories);
+            this.renderTimelineChart(stats.chart_data.timeline);
+        }
+    }
+
+    // Вспомогательные методы
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    formatDate(dateString) {
+        return new Date(dateString).toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+
+    getCategoryLabel(category) {
+        const categories = {
+            'cafe': '🍽️ Кафе и рестораны',
+            'shop': '🛍️ Магазины',
+            'services': '🔧 Услуги',
+            'education': '🎓 Образование',
+            'health': '🏥 Здоровье и спорт',
+            'beauty': '💄 Красота',
+            'entertainment': '🎭 Развлечения',
+            'other': '📌 Другое'
+        };
+        return categories[category] || category;
+    }
+
+    getStatusLabel(status) {
+        const statuses = {
+            'pending': 'На проверке',
+            'approved': 'Одобрено',
+            'rejected': 'Отклонено',
+            'active': 'Активно',
+            'inactive': 'Неактивно'
+        };
+        return statuses[status] || status;
+    }
+
+    getActionLabel(action) {
+        const actions = {
+            'approved': 'Одобрено',
+            'rejected': 'Отклонено',
+            'edited': 'Изменено',
+            'created': 'Создано'
+        };
+        return actions[action] || action;
+    }
+
+    getBusinessInfoLabel(key) {
+        const labels = {
+            'legal_name': 'Юридическое название',
+            'tax_id': 'ИНН',
+            'registration_number': 'ОГРН',
+            'legal_address': 'Юридический адрес'
+        };
+        return labels[key] || key;
+    }
+
+    getVerificationLabel(key) {
+        const labels = {
+            'method': 'Метод проверки',
+            'status': 'Статус',
+            'verified_at': 'Проверено',
+            'documents': 'Документы'
+        };
+        return labels[key] || key;
+    }
+}
+
+// 📊 СИСТЕМА АНАЛИТИКИ
+class AnalyticsSystem {
+    constructor() {
+        this.currentPeriod = 'week';
+        this.charts = {};
+        this.statsData = {};
+    }
+
+    // Загрузка данных аналитики
+    async fetchAnalyticsData(period = 'week', forceRefresh = false) {
+        try {
+            if (!forceRefresh && this.statsData[period]) {
+                return this.statsData[period];
+            }
+
+            showLoading('Загрузка аналитики...');
+
+            const response = await apiRequest(`/analytics?period=${period}`, {
+                method: 'GET'
+            }, 'Загрузка аналитики');
+
+            this.statsData[period] = response;
+            this.renderCharts(response);
+            this.updateStatsDisplay(response.summary);
+
+            hideLoading();
+            return response;
+
+        } catch (error) {
+            console.error('Ошибка загрузки аналитики:', error);
+            hideLoading();
+            showNotification('Ошибка загрузки аналитики', 'error');
+            return this.getFallbackAnalyticsData();
+        }
+    }
+
+    // Рендер графиков
+    renderCharts(data) {
+        this.renderViewsChart(data.views_chart);
+        this.renderClicksChart(data.clicks_chart);
+        this.renderConversionsChart(data.conversions_chart);
+        this.renderCategoriesChart(data.categories_chart);
+        this.renderGeoChart(data.geo_data);
+    }
+
+    // График просмотров
+    renderViewsChart(viewsData) {
+        const ctx = document.getElementById('viewsChart');
+        if (!ctx) return;
+
+        if (this.charts.views) {
+            this.charts.views.destroy();
+        }
+
+        this.charts.views = new Chart(ctx, {
+            type: 'line',
+            data: {
+                labels: viewsData.labels,
+                datasets: [{
+                    label: 'Просмотры',
+                    data: viewsData.data,
+                    borderColor: '#667eea',
+                    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+                    tension: 0.4,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Просмотры объявлений'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // График кликов
+    renderClicksChart(clicksData) {
+        const ctx = document.getElementById('clicksChart');
+        if (!ctx) return;
+
+        if (this.charts.clicks) {
+            this.charts.clicks.destroy();
+        }
+
+        this.charts.clicks = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: clicksData.labels,
+                datasets: [{
+                    label: 'Клики',
+                    data: clicksData.data,
+                    backgroundColor: '#00d4aa'
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Клики по объявлениям'
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true
+                    }
+                }
+            }
+        });
+    }
+
+    // График конверсий
+    renderConversionsChart(conversionsData) {
+        const ctx = document.getElementById('conversionsChart');
+        if (!ctx) return;
+
+        if (this.charts.conversions) {
+            this.charts.conversions.destroy();
+        }
+
+        this.charts.conversions = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: conversionsData.labels,
+                datasets: [{
+                    data: conversionsData.data,
+                    backgroundColor: [
+                        '#667eea',
+                        '#764ba2',
+                        '#00d4aa',
+                        '#ff6b35',
+                        '#f093fb'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Конверсии по типам'
+                    }
+                }
+            }
+        });
+    }
+
+    // График по категориям
+    renderCategoriesChart(categoriesData) {
+        const ctx = document.getElementById('categoriesChart');
+        if (!ctx) return;
+
+        if (this.charts.categories) {
+            this.charts.categories.destroy();
+        }
+
+        this.charts.categories = new Chart(ctx, {
+            type: 'polarArea',
+            data: {
+                labels: categoriesData.labels,
+                datasets: [{
+                    data: categoriesData.data,
+                    backgroundColor: [
+                        '#667eea',
+                        '#764ba2',
+                        '#00d4aa',
+                        '#ff6b35',
+                        '#f093fb',
+                        '#4fd1c7',
+                        '#f6e05e'
+                    ]
+                }]
+            },
+            options: {
+                responsive: true,
+                plugins: {
+                    title: {
+                        display: true,
+                        text: 'Эффективность по категориям'
+                    }
+                }
+            }
+        });
+    }
+
+    // Географическая карта
+    renderGeoChart(geoData) {
+        const ctx = document.getElementById('geoChart');
+        if (!ctx || !geoData) return;
+
+        // Интеграция с Яндекс.Картами для показа географического распределения
+        if (typeof ymaps !== 'undefined') {
+            this.renderYandexGeoChart(geoData);
+        }
+    }
+
+    // Обновление отображения статистики
+    updateStatsDisplay(summary) {
+        this.updateElement('totalViews', summary.total_views);
+        this.updateElement('totalClicks', summary.total_clicks);
+        this.updateElement('conversionRate', `${summary.conversion_rate}%`);
+        this.updateElement('avgCtr', `${summary.avg_ctr}%`);
+        this.updateElement('totalRevenue', this.formatCurrency(summary.total_revenue));
+        this.updateElement('activeAds', summary.active_ads);
+    }
+
+    // Обновление в реальном времени
+    async updateStatsRealTime() {
+        try {
+            const response = await apiRequest('/analytics/real-time', {
+                method: 'GET'
+            }, 'Обновление реального времени');
+
+            this.updateRealTimeDisplay(response);
+
+        } catch (error) {
+            console.error('Ошибка обновления реального времени:', error);
+        }
+    }
+
+    // Отображение реального времени
+    updateRealTimeDisplay(realTimeData) {
+        const realTimeElement = document.getElementById('realTimeStats');
+        if (!realTimeElement) return;
+
+        realTimeElement.innerHTML = `
+            <div class="real-time-stat">
+                <div class="real-time-value">${realTimeData.current_online}</div>
+                <div class="real-time-label">сейчас онлайн</div>
+            </div>
+            <div class="real-time-stat">
+                <div class="real-time-value">${realTimeData.views_last_hour}</div>
+                <div class="real-time-label">просмотров за час</div>
+            </div>
+            <div class="real-time-stat">
+                <div class="real-time-value">${realTimeData.clicks_last_hour}</div>
+                <div class="real-time-label">кликов за час</div>
+            </div>
+        `;
+    }
+
+    // Фильтры по периодам
+    setupPeriodFilters() {
+        const periodButtons = document.querySelectorAll('.period-filter');
+        periodButtons.forEach(button => {
+            button.addEventListener('click', async (e) => {
+                const period = e.target.dataset.period;
+                this.currentPeriod = period;
+                
+                // Обновить активную кнопку
+                periodButtons.forEach(btn => btn.classList.remove('active'));
+                e.target.classList.add('active');
+                
+                // Загрузить данные для выбранного периода
+                await this.fetchAnalyticsData(period, true);
+            });
+        });
+    }
+
+    // Экспорт данных
+    async exportAnalyticsData(format = 'csv') {
+        try {
+            showLoading('Подготовка экспорта...');
+
+            const response = await apiRequest(`/analytics/export?format=${format}&period=${this.currentPeriod}`, {
+                method: 'GET'
+            }, 'Экспорт аналитики');
+
+            this.downloadExport(response.download_url, `analytics_${this.currentPeriod}.${format}`);
+
+            hideLoading();
+            showNotification('Данные успешно экспортированы', 'success');
+
+        } catch (error) {
+            console.error('Ошибка экспорта:', error);
+            hideLoading();
+            showNotification('Ошибка экспорта данных', 'error');
+        }
+    }
+
+    // Вспомогательные методы
+    updateElement(id, value) {
+        const element = document.getElementById(id);
+        if (element) {
+            element.textContent = value;
+        }
+    }
+
+    formatCurrency(amount) {
+        return new Intl.NumberFormat('ru-RU', {
+            style: 'currency',
+            currency: 'RUB'
+        }).format(amount);
+    }
+
+    downloadExport(url, filename) {
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = filename;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    }
+
+    getFallbackAnalyticsData() {
+        return {
+            summary: {
+                total_views: 156,
+                total_clicks: 24,
+                conversion_rate: 15.4,
+                avg_ctr: 5.2,
+                total_revenue: 0,
+                active_ads: 3
+            },
+            views_chart: {
+                labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+                data: [12, 19, 3, 5, 2, 3, 15]
+            },
+            clicks_chart: {
+                labels: ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'],
+                data: [2, 3, 1, 4, 2, 1, 3]
+            }
+        };
+    }
+}
+
+// ⚙️ СИСТЕМА НАСТРОЕК
+class SettingsSystem {
+    constructor() {
+        this.settings = this.loadSettings();
+        this.applySettings();
+    }
+
+    // Загрузка настроек
+    loadSettings() {
+        const defaultSettings = {
+            language: 'ru',
+            theme: 'system',
+            notifications: true,
+            location: true,
+            sounds: true,
+            vibration: true,
+            autoSync: true,
+            offlineMode: true,
+            fontSize: 'medium',
+            reduceMotion: false
+        };
+
+        try {
+            const saved = localStorage.getItem('mapchap_settings');
+            return saved ? { ...defaultSettings, ...JSON.parse(saved) } : defaultSettings;
+        } catch (error) {
+            console.error('Ошибка загрузки настроек:', error);
+            return defaultSettings;
+        }
+    }
+
+    // Сохранение настроек
+    async saveSettings(newSettings = null) {
+        try {
+            if (newSettings) {
+                this.settings = { ...this.settings, ...newSettings };
+            }
+
+            localStorage.setItem('mapchap_settings', JSON.stringify(this.settings));
+
+            // Синхронизация с API
+            await this.syncSettingsWithAPI();
+
+            // Применение настроек
+            this.applySettings();
+
+            showNotification('Настройки сохранены', 'success');
+            return true;
+
+        } catch (error) {
+            console.error('Ошибка сохранения настроек:', error);
+            showNotification('Ошибка сохранения настроек', 'error');
+            return false;
+        }
+    }
+
+    // Синхронизация с API
+    async syncSettingsWithAPI() {
+        try {
+            await apiRequest('/users/me/settings', {
+                method: 'PUT',
+                body: JSON.stringify(this.settings)
+            }, 'Синхронизация настроек');
+        } catch (error) {
+            console.error('Ошибка синхронизации настроек:', error);
+            // Не показываем ошибку пользователю, т.к. настройки сохранены локально
+        }
+    }
+
+    // Применение настроек
+    applySettings() {
+        this.applyTheme();
+        this.applyLanguage();
+        this.applyAccessibility();
+        this.setupEventListeners();
+    }
+
+    // Применение темы
+    applyTheme() {
+        const root = document.documentElement;
+        
+        switch (this.settings.theme) {
+            case 'dark':
+                root.classList.add('theme-dark');
+                root.classList.remove('theme-light');
+                break;
+            case 'light':
+                root.classList.add('theme-light');
+                root.classList.remove('theme-dark');
+                break;
+            case 'system':
+            default:
+                root.classList.remove('theme-dark', 'theme-light');
+                if (window.matchMedia('(prefers-color-scheme: dark)').matches) {
+                    root.classList.add('theme-dark');
+                } else {
+                    root.classList.add('theme-light');
+                }
+                break;
+        }
+    }
+
+    // Применение языка
+    applyLanguage() {
+        document.documentElement.lang = this.settings.language;
+        this.loadTranslations();
+    }
+
+    // Загрузка переводов
+    async loadTranslations() {
+        try {
+            const response = await fetch(`/locales/${this.settings.language}.json`);
+            const translations = await response.json();
+            this.applyTranslations(translations);
+        } catch (error) {
+            console.error('Ошибка загрузки переводов:', error);
+        }
+    }
+
+    // Применение переводов
+    applyTranslations(translations) {
+        const elements = document.querySelectorAll('[data-i18n]');
+        elements.forEach(element => {
+            const key = element.getAttribute('data-i18n');
+            if (translations[key]) {
+                element.textContent = translations[key];
+            }
+        });
+    }
+
+    // Применение доступности
+    applyAccessibility() {
+        const root = document.documentElement;
+        
+        if (this.settings.reduceMotion) {
+            root.style.setProperty('--animation-duration', '0.1s');
+        } else {
+            root.style.removeProperty('--animation-duration');
+        }
+
+        if (this.settings.fontSize) {
+            root.style.setProperty('--text-size', this.getFontSizeValue(this.settings.fontSize));
+        }
+    }
+
+    // Настройка обработчиков событий
+    setupEventListeners() {
+        // Переключатели
+        const toggles = {
+            'notificationsToggle': 'notifications',
+            'darkModeToggle': 'theme',
+            'locationToggle': 'location',
+            'soundsToggle': 'sounds',
+            'vibrationToggle': 'vibration',
+            'autoSyncToggle': 'autoSync',
+            'offlineModeToggle': 'offlineMode',
+            'reduceMotionToggle': 'reduceMotion'
+        };
+
+        Object.entries(toggles).forEach(([toggleId, settingKey]) => {
+            const toggle = document.getElementById(toggleId);
+            if (toggle) {
+                toggle.checked = this.settings[settingKey];
+                toggle.addEventListener('change', (e) => {
+                    this.saveSettings({ [settingKey]: e.target.checked });
+                });
+            }
+        });
+
+        // Селекты
+        const selects = {
+            'languageSelect': 'language',
+            'themeSelect': 'theme',
+            'fontSizeSelect': 'fontSize'
+        };
+
+        Object.entries(selects).forEach(([selectId, settingKey]) => {
+            const select = document.getElementById(selectId);
+            if (select) {
+                select.value = this.settings[settingKey];
+                select.addEventListener('change', (e) => {
+                    this.saveSettings({ [settingKey]: e.target.value });
+                });
+            }
+        });
+    }
+
+    // Показать настройки языка
+    showLanguageSettings() {
+        const modal = this.createSettingsModal('language', 'Язык приложения');
+        modal.innerHTML = `
+            <div class="settings-options">
+                <div class="settings-option ${this.settings.language === 'ru' ? 'active' : ''}" 
+                     onclick="settingsSystem.saveSettings({language: 'ru'})">
+                    <span>🇷🇺 Русский</span>
+                    ${this.settings.language === 'ru' ? '<i class="fas fa-check"></i>' : ''}
+                </div>
+                <div class="settings-option ${this.settings.language === 'en' ? 'active' : ''}" 
+                     onclick="settingsSystem.saveSettings({language: 'en'})">
+                    <span>🇺🇸 English</span>
+                    ${this.settings.language === 'en' ? '<i class="fas fa-check"></i>' : ''}
+                </div>
+                <div class="settings-option ${this.settings.language === 'kk' ? 'active' : ''}" 
+                     onclick="settingsSystem.saveSettings({language: 'kk'})">
+                    <span>🇰🇿 Қазақша</span>
+                    ${this.settings.language === 'kk' ? '<i class="fas fa-check"></i>' : ''}
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    }
+
+    // Показать настройки темы
+    showThemeSettings() {
+        const modal = this.createSettingsModal('theme', 'Тема оформления');
+        modal.innerHTML = `
+            <div class="settings-options">
+                <div class="settings-option ${this.settings.theme === 'system' ? 'active' : ''}" 
+                     onclick="settingsSystem.saveSettings({theme: 'system'})">
+                    <span>🖥️ Системная</span>
+                    ${this.settings.theme === 'system' ? '<i class="fas fa-check"></i>' : ''}
+                </div>
+                <div class="settings-option ${this.settings.theme === 'light' ? 'active' : ''}" 
+                     onclick="settingsSystem.saveSettings({theme: 'light'})">
+                    <span>☀️ Светлая</span>
+                    ${this.settings.theme === 'light' ? '<i class="fas fa-check"></i>' : ''}
+                </div>
+                <div class="settings-option ${this.settings.theme === 'dark' ? 'active' : ''}" 
+                     onclick="settingsSystem.saveSettings({theme: 'dark'})">
+                    <span>🌙 Тёмная</span>
+                    ${this.settings.theme === 'dark' ? '<i class="fas fa-check"></i>' : ''}
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    }
+
+    // Создание модального окна настроек
+    createSettingsModal(type, title) {
+        const modal = document.createElement('div');
+        modal.className = 'modal-overlay active';
+        modal.innerHTML = `
+            <div class="modal-content settings-modal">
+                <div class="modal-header">
+                    <h3>${title}</h3>
+                    <button class="modal-close" onclick="this.closest('.modal-overlay').remove()">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="modal-body" id="settingsModalBody">
+                    <!-- Контент будет добавлен динамически -->
+                </div>
+            </div>
+        `;
+        return modal;
+    }
+
+    // Вспомогательные методы
+    getFontSizeValue(size) {
+        const sizes = {
+            'small': '12px',
+            'medium': '14px',
+            'large': '16px',
+            'xlarge': '18px'
+        };
+        return sizes[size] || sizes.medium;
+    }
+
+    // Сброс настроек
+    async resetSettings() {
+        if (confirm('Вы уверены, что хотите сбросить все настройки к значениям по умолчанию?')) {
+            localStorage.removeItem('mapchap_settings');
+            this.settings = this.loadSettings();
+            this.applySettings();
+            showNotification('Настройки сброшены', 'success');
+        }
+    }
+
+    // Экспорт настроек
+    exportSettings() {
+        const dataStr = JSON.stringify(this.settings, null, 2);
+        const dataBlob = new Blob([dataStr], { type: 'application/json' });
+        const url = URL.createObjectURL(dataBlob);
+        
+        const link = document.createElement('a');
+        link.href = url;
+        link.download = 'mapchap_settings.json';
+        link.click();
+        
+        URL.revokeObjectURL(url);
+    }
+
+    // Импорт настроек
+    importSettings(file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const importedSettings = JSON.parse(e.target.result);
+                this.saveSettings(importedSettings);
+                showNotification('Настройки импортированы', 'success');
+            } catch (error) {
+                showNotification('Ошибка импорта настроек', 'error');
+            }
+        };
+        reader.readAsText(file);
+    }
+}
+
+// 🔔 СИСТЕМА УВЕДОМЛЕНИЙ
+class NotificationSystem {
+    constructor() {
+        this.notifications = [];
+        this.currentPage = 1;
+        this.notificationsPerPage = 20;
+        this.unreadCount = 0;
+    }
+
+    // Загрузка уведомлений из API
+    async loadNotificationsFromAPI(page = 1, refresh = false) {
+        try {
+            if (refresh) {
+                this.currentPage = 1;
+                this.notifications = [];
+            }
+
+            showLoading('Загрузка уведомлений...');
+
+            const response = await apiRequest(`/notifications?page=${page}&limit=${this.notificationsPerPage}`, {
+                method: 'GET'
+            }, 'Загрузка уведомлений');
+
+            if (page === 1) {
+                this.notifications = response.notifications;
+            } else {
+                this.notifications = [...this.notifications, ...response.notifications];
+            }
+
+            this.unreadCount = response.unread_count;
+            this.renderNotifications();
+            this.updateUnreadBadge();
+
+            // Настройка пагинации
+            this.setupPagination(response.total, response.total_pages);
+
+            hideLoading();
+            return response;
+
+        } catch (error) {
+            console.error('Ошибка загрузки уведомлений:', error);
+            hideLoading();
+            showNotification('Ошибка загрузки уведомлений', 'error');
+            return this.getFallbackNotifications();
+        }
+    }
+
+    // Рендер уведомлений
+    renderNotifications() {
+        const notificationsList = document.getElementById('notificationsList');
+        if (!notificationsList) return;
+
+        if (this.currentPage === 1) {
+            notificationsList.innerHTML = '';
+        }
+
+        if (this.notifications.length === 0) {
+            notificationsList.innerHTML = `
+                <div class="empty-state">
+                    <i class="fas fa-bell-slash"></i>
+                    <p>Нет уведомлений</p>
+                </div>
+            `;
+            return;
+        }
+
+        this.notifications.forEach(notification => {
+            const notificationElement = this.createNotificationElement(notification);
+            notificationsList.appendChild(notificationElement);
+        });
+    }
+
+    // Создание элемента уведомления
+    createNotificationElement(notification) {
+        const notificationElement = document.createElement('div');
+        notificationElement.className = `notification-item ${notification.read ? 'read' : 'unread'}`;
+        notificationElement.innerHTML = `
+            <div class="notification-header">
+                <div class="notification-title">${this.escapeHtml(notification.title)}</div>
+                <div class="notification-time">${this.formatTime(notification.created_at)}</div>
+            </div>
+            <div class="notification-message">${this.escapeHtml(notification.message)}</div>
+            <div class="notification-actions">
+                ${!notification.read ? `
+                <button class="notification-action-btn read" onclick="notificationSystem.markNotificationAsRead('${notification.id}')">
+                    <i class="fas fa-check"></i> Прочитано
+                </button>
+                ` : ''}
+                <button class="notification-action-btn delete" onclick="notificationSystem.deleteNotification('${notification.id}')">
+                    <i class="fas fa-trash"></i> Удалить
+                </button>
+                ${notification.action_url ? `
+                <button class="notification-action-btn action" onclick="notificationSystem.handleNotificationAction('${notification.id}', '${notification.action_url}')">
+                    <i class="fas fa-external-link-alt"></i> Перейти
+                </button>
+                ` : ''}
+            </div>
+        `;
+
+        return notificationElement;
+    }
+
+    // Отметка уведомления как прочитанного
+    async markNotificationAsRead(notificationId) {
+        try {
+            await apiRequest(`/notifications/${notificationId}/read`, {
+                method: 'POST'
+            }, 'Отметка как прочитанного');
+
+            // Обновить локальное состояние
+            const notification = this.notifications.find(n => n.id === notificationId);
+            if (notification) {
+                notification.read = true;
+            }
+
+            this.unreadCount = Math.max(0, this.unreadCount - 1);
+            this.renderNotifications();
+            this.updateUnreadBadge();
+
+            showNotification('Уведомление отмечено как прочитанное', 'success');
+
+        } catch (error) {
+            console.error('Ошибка отметки уведомления:', error);
+            showNotification('Ошибка отметки уведомления', 'error');
+        }
+    }
+
+    // Отметка всех как прочитанных
+    async markAllAsRead() {
+        try {
+            await apiRequest('/notifications/read-all', {
+                method: 'POST'
+            }, 'Отметка всех как прочитанных');
+
+            // Обновить локальное состояние
+            this.notifications.forEach(notification => {
+                notification.read = true;
+            });
+
+            this.unreadCount = 0;
+            this.renderNotifications();
+            this.updateUnreadBadge();
+
+            showNotification('Все уведомления отмечены как прочитанные', 'success');
+
+        } catch (error) {
+            console.error('Ошибка отметки всех уведомлений:', error);
+            showNotification('Ошибка отметки всех уведомлений', 'error');
+        }
+    }
+
+    // Удаление уведомления
+    async deleteNotification(notificationId) {
+        try {
+            await apiRequest(`/notifications/${notificationId}`, {
+                method: 'DELETE'
+            }, 'Удаление уведомления');
+
+            // Удалить из локального состояния
+            this.notifications = this.notifications.filter(n => n.id !== notificationId);
+            this.renderNotifications();
+
+            showNotification('Уведомление удалено', 'success');
+
+        } catch (error) {
+            console.error('Ошибка удаления уведомления:', error);
+            showNotification('Ошибка удаления уведомления', 'error');
+        }
+    }
+
+    // Обработка действия уведомления
+    async handleNotificationAction(notificationId, actionUrl) {
+        try {
+            // Отметить как прочитанное
+            await this.markNotificationAsRead(notificationId);
+
+            // Выполнить действие
+            if (actionUrl.startsWith('http')) {
+                window.open(actionUrl, '_blank');
+            } else {
+                // Внутренний роутинг
+                this.handleInternalAction(actionUrl);
+            }
+
+        } catch (error) {
+            console.error('Ошибка обработки действия:', error);
+        }
+    }
+
+    // Обработка внутренних действий
+    handleInternalAction(action) {
+        const actions = {
+            'open_ads': () => showMyAds(),
+            'open_profile': () => showProfile(),
+            'open_settings': () => showSettings(),
+            'create_ad': () => showBusinessPanel()
+        };
+
+        if (actions[action]) {
+            actions[action]();
+        }
+    }
+
+    // Настройка пагинации
+    setupPagination(total, totalPages) {
+        const paginationContainer = document.getElementById('notificationsPagination');
+        if (!paginationContainer) return;
+
+        if (totalPages <= 1) {
+            paginationContainer.style.display = 'none';
+            return;
+        }
+
+        paginationContainer.style.display = 'flex';
+        paginationContainer.innerHTML = '';
+
+        // Кнопка "Назад"
+        if (this.currentPage > 1) {
+            const prevButton = document.createElement('button');
+            prevButton.className = 'pagination-btn';
+            prevButton.innerHTML = '<i class="fas fa-chevron-left"></i>';
+            prevButton.onclick = () => this.loadPage(this.currentPage - 1);
+            paginationContainer.appendChild(prevButton);
+        }
+
+        // Номера страниц
+        for (let i = 1; i <= totalPages; i++) {
+            if (i === 1 || i === totalPages || (i >= this.currentPage - 1 && i <= this.currentPage + 1)) {
+                const pageButton = document.createElement('button');
+                pageButton.className = `pagination-btn ${i === this.currentPage ? 'active' : ''}`;
+                pageButton.textContent = i;
+                pageButton.onclick = () => this.loadPage(i);
+                paginationContainer.appendChild(pageButton);
+            } else if (i === this.currentPage - 2 || i === this.currentPage + 2) {
+                const ellipsis = document.createElement('span');
+                ellipsis.className = 'pagination-ellipsis';
+                ellipsis.textContent = '...';
+                paginationContainer.appendChild(ellipsis);
+            }
+        }
+
+        // Кнопка "Вперед"
+        if (this.currentPage < totalPages) {
+            const nextButton = document.createElement('button');
+            nextButton.className = 'pagination-btn';
+            nextButton.innerHTML = '<i class="fas fa-chevron-right"></i>';
+            nextButton.onclick = () => this.loadPage(this.currentPage + 1);
+            paginationContainer.appendChild(nextButton);
+        }
+    }
+
+    // Загрузка страницы
+    async loadPage(page) {
+        this.currentPage = page;
+        await this.loadNotificationsFromAPI(page);
+        
+        // Прокрутка к верху
+        const notificationsList = document.getElementById('notificationsList');
+        if (notificationsList) {
+            notificationsList.scrollTop = 0;
+        }
+    }
+
+    // Обновление бейджа непрочитанных
+    updateUnreadBadge() {
+        const badge = document.getElementById('notificationsBadge');
+        if (badge) {
+            if (this.unreadCount > 0) {
+                badge.textContent = this.unreadCount > 99 ? '99+' : this.unreadCount;
+                badge.style.display = 'inline-block';
+            } else {
+                badge.style.display = 'none';
+            }
+        }
+    }
+
+    // Подписка на уведомления
+    async subscribeToNotifications() {
+        try {
+            const response = await apiRequest('/notifications/subscribe', {
+                method: 'POST',
+                body: JSON.stringify({
+                    device_type: 'web',
+                    push_token: await this.getPushToken()
+                })
+            }, 'Подписка на уведомления');
+
+            showNotification('Уведомления включены', 'success');
+            return response;
+
+        } catch (error) {
+            console.error('Ошибка подписки на уведомления:', error);
+            showNotification('Ошибка включения уведомлений', 'error');
+            throw error;
+        }
+    }
+
+    // Отписка от уведомлений
+    async unsubscribeFromNotifications() {
+        try {
+            await apiRequest('/notifications/unsubscribe', {
+                method: 'POST'
+            }, 'Отписка от уведомлений');
+
+            showNotification('Уведомления отключены', 'warning');
+
+        } catch (error) {
+            console.error('Ошибка отписки от уведомлений:', error);
+            showNotification('Ошибка отключения уведомлений', 'error');
+        }
+    }
+
+    // Вспомогательные методы
+    escapeHtml(text) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        return div.innerHTML;
+    }
+
+    formatTime(dateString) {
+        const date = new Date(dateString);
+        const now = new Date();
+        const diffMs = now - date;
+        const diffMins = Math.floor(diffMs / 60000);
+        const diffHours = Math.floor(diffMs / 3600000);
+        const diffDays = Math.floor(diffMs / 86400000);
+
+        if (diffMins < 1) return 'только что';
+        if (diffMins < 60) return `${diffMins} мин назад`;
+        if (diffHours < 24) return `${diffHours} ч назад`;
+        if (diffDays < 7) return `${diffDays} дн назад`;
+        
+        return date.toLocaleDateString('ru-RU', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+        });
+    }
+
+    getFallbackNotifications() {
+        return {
+            notifications: [
+                {
+                    id: '1',
+                    title: 'Новое предложение',
+                    message: 'В вашем районе появилось новое предложение со скидкой 30% в кофейне Central',
+                    created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
+                    read: false,
+                    action_url: 'open_ads'
+                },
+                {
+                    id: '2',
+                    title: 'Объявление одобрено',
+                    message: 'Ваше объявление "Кофейня Central" прошло модерацию и теперь видно всем пользователям',
+                    created_at: new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString(),
+                    read: true,
+                    action_url: 'open_ads'
+                }
+            ],
+            unread_count: 1,
+            total: 2,
+            total_pages: 1
+        };
+    }
+}
+
+// 📱 PUSH-УВЕДОМЛЕНИЯ (Service Worker)
+class PushNotificationSystem {
+    constructor() {
+        this.serviceWorker = null;
+        this.pushSubscription = null;
+        this.isSupported = 'serviceWorker' in navigator && 'PushManager' in window;
+    }
+
+    // Инициализация Service Worker
+    async initializeServiceWorker() {
+        if (!this.isSupported) {
+            console.warn('Push-уведомления не поддерживаются в этом браузере');
+            return false;
+        }
+
+        try {
+            // Регистрация Service Worker
+            this.serviceWorker = await navigator.serviceWorker.register('/sw.js', {
+                scope: '/'
+            });
+
+            console.log('Service Worker зарегистрирован:', this.serviceWorker);
+
+            // Проверка подписки на уведомления
+            this.pushSubscription = await this.serviceWorker.pushManager.getSubscription();
+            
+            // Запрос разрешения, если еще не подписаны
+            if (!this.pushSubscription) {
+                await this.requestNotificationPermission();
+            }
+
+            return true;
+
+        } catch (error) {
+            console.error('Ошибка инициализации Service Worker:', error);
+            return false;
+        }
+    }
+
+    // Запрос разрешения на уведомления
+    async requestNotificationPermission() {
+        if (!this.isSupported) return false;
+
+        try {
+            const permission = await Notification.requestPermission();
+            
+            if (permission === 'granted') {
+                await this.subscribeToPushNotifications();
+                return true;
+            } else {
+                console.warn('Разрешение на уведомления не предоставлено');
+                return false;
+            }
+        } catch (error) {
+            console.error('Ошибка запроса разрешения:', error);
+            return false;
+        }
+    }
+
+    // Подписка на push-уведомления
+    async subscribeToPushNotifications() {
+        if (!this.isSupported || !this.serviceWorker) {
+            throw new Error('Service Worker не инициализирован');
+        }
+
+        try {
+            // Получение VAPID ключа с сервера
+            const vapidKey = await this.getVAPIDPublicKey();
+
+            // Подписка на push-сообщения
+            this.pushSubscription = await this.serviceWorker.pushManager.subscribe({
+                userVisibleOnly: true,
+                applicationServerKey: this.urlBase64ToUint8Array(vapidKey)
+            });
+
+            // Отправка подписки на сервер
+            await this.sendSubscriptionToServer(this.pushSubscription);
+
+            console.log('Подписка на push-уведомления успешна');
+            return this.pushSubscription;
+
+        } catch (error) {
+            console.error('Ошибка подписки на push-уведомления:', error);
+            throw error;
+        }
+    }
+
+    // Отписка от push-уведомлений
+    async unsubscribeFromPushNotifications() {
+        if (!this.pushSubscription) return;
+
+        try {
+            await this.pushSubscription.unsubscribe();
+            
+            // Уведомление сервера об отписке
+            await this.removeSubscriptionFromServer(this.pushSubscription);
+            
+            this.pushSubscription = null;
+            console.log('Отписка от push-уведомлений успешна');
+
+        } catch (error) {
+            console.error('Ошибка отписки от push-уведомлений:', error);
+            throw error;
+        }
+    }
+
+    // Получение VAPID ключа
+    async getVAPIDPublicKey() {
+        try {
+            const response = await apiRequest('/notifications/vapid-key', {
+                method: 'GET'
+            }, 'Получение VAPID ключа');
+
+            return response.publicKey;
+
+        } catch (error) {
+            console.error('Ошибка получения VAPID ключа:', error);
+            throw error;
+        }
+    }
+
+    // Отправка подписки на сервер
+    async sendSubscriptionToServer(subscription) {
+        try {
+            await apiRequest('/notifications/subscribe-push', {
+                method: 'POST',
+                body: JSON.stringify({
+                    subscription: subscription,
+                    device_info: this.getDeviceInfo()
+                })
+            }, 'Отправка подписки на сервер');
+
+        } catch (error) {
+            console.error('Ошибка отправки подписки на сервер:', error);
+            throw error;
+        }
+    }
+
+    // Удаление подписки с сервера
+    async removeSubscriptionFromServer(subscription) {
+        try {
+            await apiRequest('/notifications/unsubscribe-push', {
+                method: 'POST',
+                body: JSON.stringify({
+                    endpoint: subscription.endpoint
+                })
+            }, 'Удаление подписки с сервера');
+
+        } catch (error) {
+            console.error('Ошибка удаления подписки с сервера:', error);
+            throw error;
+        }
+    }
+
+    // Обработка входящих push-сообщений
+    setupPushMessageHandler() {
+        if (!this.serviceWorker) return;
+
+        // Обработка сообщений в Service Worker
+        navigator.serviceWorker.addEventListener('message', (event) => {
+            if (event.data && event.data.type === 'PUSH_RECEIVED') {
+                this.handlePushNotification(event.data.payload);
+            }
+        });
+    }
+
+    // Обработка push-уведомления
+    handlePushNotification(payload) {
+        const { title, body, icon, data } = payload;
+
+        // Показать уведомление
+        if ('Notification' in window && Notification.permission === 'granted') {
+            const notification = new Notification(title, {
+                body: body,
+                icon: icon || '/icons/icon-192x192.png',
+                data: data,
+                tag: 'mapchap-notification'
+            });
+
+            // Обработка клика по уведомлению
+            notification.onclick = () => {
+                window.focus();
+                notification.close();
+                
+                // Обработка действия из данных уведомления
+                if (data && data.action) {
+                    this.handleNotificationAction(data.action, data.params);
+                }
+            };
+        }
+
+        // Обновить список уведомлений в приложении
+        if (typeof notificationSystem !== 'undefined') {
+            notificationSystem.loadNotificationsFromAPI(1, true);
+        }
+    }
+
+    // Интеграция с Telegram Web App уведомлениями
+    setupTelegramIntegration() {
+        if (window.Telegram && window.Telegram.WebApp) {
+            const tg = window.Telegram.WebApp;
+
+            // Включение уведомлений в Telegram
+            tg.enableClosingConfirmation();
+            
+            // Обработка событий Telegram
+            tg.onEvent('viewportChanged', (event) => {
+                this.handleViewportChange(event);
+            });
+
+            // Отправка данных в Telegram
+            tg.ready();
+        }
+    }
+
+    // Вспомогательные методы
+    urlBase64ToUint8Array(base64String) {
+        const padding = '='.repeat((4 - base64String.length % 4) % 4);
+        const base64 = (base64String + padding)
+            .replace(/\-/g, '+')
+            .replace(/_/g, '/');
+
+        const rawData = window.atob(base64);
+        const outputArray = new Uint8Array(rawData.length);
+
+        for (let i = 0; i < rawData.length; ++i) {
+            outputArray[i] = rawData.charCodeAt(i);
+        }
+        return outputArray;
+    }
+
+    getDeviceInfo() {
+        return {
+            userAgent: navigator.userAgent,
+            platform: navigator.platform,
+            language: navigator.language,
+            timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+            screen: {
+                width: screen.width,
+                height: screen.height
+            }
+        };
+    }
+
+    handleNotificationAction(action, params) {
+        const actions = {
+            'open_ad': () => {
+                if (params && params.ad_id) {
+                    // Открыть карточку объявления
+                    openAdDetails(params.ad_id);
+                }
+            },
+            'open_profile': () => showProfile(),
+            'open_settings': () => showSettings()
+        };
+
+        if (actions[action]) {
+            actions[action]();
+        }
+    }
+
+    handleViewportChange(event) {
+        // Адаптация интерфейса под изменения viewport в Telegram
+        console.log('Viewport changed:', event);
+    }
+
+    // Проверка статуса подписки
+    async getSubscriptionStatus() {
+        if (!this.isSupported) {
+            return {
+                supported: false,
+                subscribed: false,
+                permission: 'denied'
+            };
+        }
+
+        const permission = Notification.permission;
+        const subscribed = !!this.pushSubscription;
+
+        return {
+            supported: true,
+            subscribed: subscribed,
+            permission: permission
+        };
+    }
+}
+
+// 🎯 ИНИЦИАЛИЗАЦИЯ СИСТЕМ
+const moderationSystem = new ModerationSystem();
+const analyticsSystem = new AnalyticsSystem();
+const settingsSystem = new SettingsSystem();
+const notificationSystem = new NotificationSystem();
+const pushNotificationSystem = new PushNotificationSystem();
+
+// 📦 ФУНКЦИИ ИНИЦИАЛИЗАЦИИ
+async function initializeExtendedFeatures() {
+    try {
+        // Инициализация модерации
+        await initializeModerationSystem();
+        
+        // Инициализация аналитики
+        await initializeAnalyticsSystem();
+        
+        // Инициализация настроек
+        await initializeSettingsSystem();
+        
+        // Инициализация уведомлений
+        await initializeNotificationSystem();
+        
+        // Инициализация push-уведомлений
+        await initializePushNotifications();
+
+        console.log('✅ Расширенные функции инициализированы');
+
+    } catch (error) {
+        console.error('❌ Ошибка инициализации расширенных функций:', error);
+    }
+}
+
+// Инициализация системы модерации
+async function initializeModerationSystem() {
+    const isModerator = await moderationSystem.checkModeratorRights();
+    
+    if (isModerator) {
+        document.getElementById('moderationBtn').style.display = 'block';
+        
+        // Загрузка данных модерации при открытии раздела
+        document.getElementById('moderationBtn').addEventListener('click', async () => {
+            await moderationSystem.loadModerationAds(1, true);
+        });
+    }
+}
+
+// Инициализация системы аналитики
+async function initializeAnalyticsSystem() {
+    // Загрузка данных аналитики при открытии раздела
+    document.querySelector('[data-section="analytics"]').addEventListener('click', async () => {
+        await analyticsSystem.fetchAnalyticsData('week', true);
+        analyticsSystem.setupPeriodFilters();
+    });
+
+    // Обновление в реальном времени
+    setInterval(() => {
+        analyticsSystem.updateStatsRealTime();
+    }, 30000);
+}
+
+// Инициализация системы настроек
+async function initializeSettingsSystem() {
+    // Настройка обработчиков для меню настроек
+    document.querySelectorAll('.settings-item').forEach(item => {
+        const action = item.getAttribute('onclick');
+        if (!action) {
+            const text = item.querySelector('.settings-label').textContent;
+            if (text.includes('Язык')) {
+                item.onclick = () => settingsSystem.showLanguageSettings();
+            } else if (text.includes('Тема')) {
+                item.onclick = () => settingsSystem.showThemeSettings();
+            }
+        }
+    });
+}
+
+// Инициализация системы уведомлений
+async function initializeNotificationSystem() {
+    // Загрузка уведомлений при открытии раздела
+    document.querySelector('[onclick="showNotifications()"]').addEventListener('click', async () => {
+        await notificationSystem.loadNotificationsFromAPI(1, true);
+    });
+
+    // Периодическое обновление счетчика
+    setInterval(async () => {
+        await notificationSystem.loadNotificationsFromAPI(1, true);
+    }, 60000);
+}
+
+// Инициализация push-уведомлений
+async function initializePushNotifications() {
+    if (await pushNotificationSystem.initializeServiceWorker()) {
+        pushNotificationSystem.setupPushMessageHandler();
+        pushNotificationSystem.setupTelegramIntegration();
+    }
+}
+
+// 🎯 ОБНОВЛЕННЫЕ ФУНКЦИИ ИНТЕРФЕЙСА
+
+// Показать уведомления
+async function showNotifications() {
+    // Переключение на секцию уведомлений в профиле
+    document.querySelectorAll('.profile-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    document.getElementById('profileNotifications').classList.add('active');
+    
+    // Загрузка уведомлений
+    await notificationSystem.loadNotificationsFromAPI(1, true);
+}
+
+// Показать настройки
+function showSettings() {
+    document.querySelectorAll('.profile-section').forEach(section => {
+        section.classList.remove('active');
+    });
+    document.getElementById('profileSettings').classList.add('active');
+}
+
+// Показать настройки языка
+function showLanguageSettings() {
+    settingsSystem.showLanguageSettings();
+}
+
+// Показать настройки темы
+function showThemeSettings() {
+    settingsSystem.showThemeSettings();
+}
+
+// Загрузка данных аналитики
+async function fetchAnalyticsData(period = 'week') {
+    return await analyticsSystem.fetchAnalyticsData(period, true);
+}
+
+// Инициализация при загрузке
+document.addEventListener('DOMContentLoaded', function() {
+    initializeExtendedFeatures();
+});
+
+// 🔧 ВСПОМОГАТЕЛЬНЫЕ ФУНКЦИИ
+
+// Показать уведомление
+function showNotification(message, type = 'info', duration = 3000) {
+    const notification = document.getElementById('notification');
+    if (!notification) return;
+
+    notification.textContent = message;
+    notification.className = `notification ${type} show`;
+    
+    setTimeout(() => {
+        notification.classList.remove('show');
+    }, duration);
+}
+
+// Показать загрузку
+function showLoading(text = 'Загрузка...') {
+    const overlay = document.getElementById('loadingOverlay');
+    const loadingText = document.getElementById('loadingText');
+    
+    if (overlay && loadingText) {
+        loadingText.textContent = text;
+        overlay.style.display = 'flex';
+    }
+}
+
+// Скрыть загрузку
+function hideLoading() {
+    const overlay = document.getElementById('loadingOverlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
+}
+
+// API запрос (универсальная функция)
+async function apiRequest(endpoint, options = {}, operationName = 'Операция') {
+    const url = endpoint.startsWith('http') ? endpoint : `${CONFIG.API_BASE_URL}${endpoint}`;
+    
+    const defaultOptions = {
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json',
+            'Authorization': `Bearer ${localStorage.getItem('authToken')}`
+        },
+        timeout: 10000
+    };
+
+    const mergedOptions = { ...defaultOptions, ...options };
+
+    try {
+        const response = await fetch(url, mergedOptions);
+        
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        }
+
+        return await response.json();
+
+    } catch (error) {
+        console.error(`Ошибка ${operationName}:`, error);
+        throw error;
+    }
+}
+
+// 🔧 ДОПОЛНИТЕЛЬНЫЕ СТИЛИ ДЛЯ НОВЫХ КОМПОНЕНТОВ
+const additionalStyles = `
+/* Стили для модерации */
+.moderation-ad-item {
+    background: var(--card-bg);
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    margin-bottom: 12px;
+}
+
+.moderation-ad-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 12px;
+}
+
+.moderation-ad-title {
+    font-weight: 600;
+    font-size: 16px;
+    color: var(--text-primary);
+}
+
+.moderation-ad-meta {
+    display: flex;
+    gap: 12px;
+    font-size: 12px;
+    color: var(--text-secondary);
+}
+
+.moderation-ad-content {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.moderation-ad-field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.moderation-ad-field.full-width {
+    grid-column: 1 / -1;
+}
+
+.moderation-ad-field label {
+    font-size: 12px;
+    color: var(--text-secondary);
+    font-weight: 500;
+}
+
+.moderation-ad-actions {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.moderation-btn {
+    padding: 8px 12px;
+    border: none;
+    border-radius: 6px;
+    font-size: 12px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: all 0.3s ease;
+}
+
+.moderation-btn.approve {
+    background: var(--success);
+    color: white;
+}
+
+.moderation-btn.reject {
+    background: var(--error);
+    color: white;
+}
+
+.moderation-btn.details {
+    background: var(--accent-blue);
+    color: white;
+}
+
+/* Стили для аналитики */
+.analytics-charts {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+    margin-bottom: 20px;
+}
+
+.analytics-chart-container {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 16px;
+}
+
+.period-filters {
+    display: flex;
+    gap: 8px;
+    margin-bottom: 16px;
+}
+
+.period-filter {
+    padding: 8px 16px;
+    border: 1px solid var(--border-color);
+    border-radius: 8px;
+    background: var(--surface-bg);
+    color: var(--text-primary);
+    cursor: pointer;
+}
+
+.period-filter.active {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: white;
+}
+
+/* Стили для уведомлений */
+.notification-item.unread {
+    border-left: 4px solid var(--accent-blue);
+    background: var(--surface-bg);
+}
+
+.notification-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.notification-action-btn {
+    padding: 4px 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+    background: var(--card-bg);
+    color: var(--text-primary);
+    font-size: 11px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* Адаптивность */
+@media (max-width: 768px) {
+    .analytics-charts {
+        grid-template-columns: 1fr;
+    }
+    
+    .moderation-ad-content {
+        grid-template-columns: 1fr;
+    }
+    
+    .moderation-ad-actions {
+        flex-direction: column;
+    }
+}
+`;
+
+// Добавление стилей в документ
+const styleSheet = document.createElement('style');
+styleSheet.textContent = additionalStyles;
+document.head.appendChild(styleSheet);
+     </script>
+</body>
+  </html>
