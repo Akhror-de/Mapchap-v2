@@ -1,0 +1,3021 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MapChap - Карта выгодных предложений</title>
+    
+    <!-- PWA Manifest (inline) -->
+    <link rel="manifest" href="data:application/manifest+json,...">
+    <meta name="theme-color" content="#667eea">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="MapChap">
+    
+    <!-- Preload critical resources -->
+    <link rel="preload" href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" as="style">
+    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" as="style">
+    
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <script src="https://api-maps.yandex.ru/2.1/?apikey=07b74146-5f5a-46bf-a2b1-cf6d052a41bb&lang=ru_RU" type="text/javascript"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <style>
+        /* Все предыдущие стили остаются без изменений */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --tg-theme-bg-color: #0a0a0a;
+            --tg-theme-text-color: #ffffff;
+            --tg-theme-hint-color: #a0a0a0;
+            --tg-theme-link-color: #667eea;
+            --tg-theme-button-color: #667eea;
+            --tg-theme-button-text-color: #ffffff;
+            --tg-theme-secondary-bg-color: #1a1a1a;
+            
+            --text-size: 14px;
+            --header-height: 54px;
+            --primary-bg: var(--tg-theme-bg-color, #0a0a0a);
+            --surface-bg: var(--tg-theme-secondary-bg-color, #1a1a1a);
+            --card-bg: #2a2a2a;
+            --border-color: #333333;
+            --text-primary: var(--tg-theme-text-color, #ffffff);
+            --text-secondary: var(--tg-theme-hint-color, #a0a0a0);
+            --accent-orange: #ff6b35;
+            --accent-green: #00d4aa;
+            --accent-blue: var(--tg-theme-button-color, #667eea);
+            --accent-purple: #764ba2;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --error: #ef4444;
+            --radius-sm: 8px;
+            --radius-md: 12px;
+            --radius-lg: 16px;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.1);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.2);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.3);
+        }
+
+        [data-theme="light"] {
+            --primary-bg: #ffffff;
+            --surface-bg: #f5f5f5;
+            --card-bg: #ffffff;
+            --border-color: #e0e0e0;
+            --text-primary: #1a1a1a;
+            --text-secondary: #666666;
+            --shadow-sm: 0 2px 8px rgba(0,0,0,0.05);
+            --shadow-md: 0 4px 16px rgba(0,0,0,0.1);
+            --shadow-lg: 0 8px 32px rgba(0,0,0,0.15);
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background: var(--primary-bg);
+            color: var(--text-primary);
+            overflow: hidden;
+            height: 100vh;
+            touch-action: pan-x pan-y;
+            font-size: var(--text-size);
+            font-weight: 400;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .app-container {
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+            position: relative;
+        }
+
+        /* Header */
+        .header {
+            background: var(--surface-bg);
+            padding: 8px 16px;
+            position: relative;
+            z-index: 1000;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            min-height: var(--header-height);
+            gap: 12px;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .header-left {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+
+        .brand-name {
+            font-size: 20px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-green), var(--accent-orange));
+            background-size: 200% 200%;
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            animation: gradientShift 3s ease-in-out infinite;
+            white-space: nowrap;
+            letter-spacing: -0.5px;
+        }
+
+        @keyframes gradientShift {
+            0%, 100% { background-position: 0% 50%; }
+            50% { background-position: 100% 50%; }
+        }
+
+        .business-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 8px 14px;
+            color: var(--text-primary);
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            white-space: nowrap;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        .business-btn:hover {
+            background: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        .business-btn.active {
+            background: var(--accent-blue);
+            box-shadow: var(--shadow-md);
+        }
+
+        .profile-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            width: 38px;
+            height: 38px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            flex-shrink: 0;
+            position: relative;
+        }
+
+        .profile-btn:hover {
+            background: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        .profile-btn.has-notifications::after {
+            content: '';
+            position: absolute;
+            top: -2px;
+            right: -2px;
+            width: 8px;
+            height: 8px;
+            background: var(--error);
+            border-radius: 50%;
+            border: 2px solid var(--surface-bg);
+        }
+
+        .header-actions {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            flex-shrink: 0;
+        }
+
+        /* Map Container */
+        .map-container {
+            flex: 1;
+            position: relative;
+            background: var(--surface-bg);
+            width: 100%;
+            height: calc(100vh - var(--header-height));
+            overflow: hidden;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Скрываем элементы Яндекс Карт */
+        .ymaps-2-1-79-copyright,
+        .ymaps-2-1-79-copyright__wrap,
+        .ymaps-2-1-79-copyrights-pane,
+        .ymaps-2-1-79-controls__control,
+        .ymaps-2-1-79-controls__toolbar,
+        .ymaps-2-1-79-controls__toolbar_left,
+        .ymaps-2-1-79-controls__toolbar_right,
+        .ymaps-2-1-79-search,
+        .ymaps-2-1-79-search__suggest,
+        .ymaps-2-1-79-search__suggest-item,
+        .ymaps-2-1-79-search__suggest-item-text {
+            display: none !important;
+        }
+
+        .ymaps-2-1-79-map {
+            background: var(--surface-bg);
+        }
+
+        .map-placeholder {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            background: var(--surface-bg);
+            color: var(--text-secondary);
+            text-align: center;
+            padding: 20px;
+            position: absolute;
+            top: 0;
+            left: 0;
+            z-index: 10;
+        }
+
+        .map-placeholder i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        /* Custom Controls */
+        .controls-container {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            z-index: 1000;
+            background: rgba(26, 26, 26, 0.9);
+            padding: 8px;
+            border-radius: var(--radius-md);
+            backdrop-filter: blur(10px);
+            border: 1px solid var(--border-color);
+        }
+
+        .control-btn {
+            width: 40px;
+            height: 40px;
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .control-btn:hover {
+            background: var(--accent-blue);
+            transform: translateY(-1px);
+        }
+
+        /* Bottom Sheet */
+        .bottom-sheet {
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: var(--surface-bg);
+            border-top: 1px solid var(--border-color);
+            z-index: 1001;
+            transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            height: 40vh;
+            max-height: 70vh;
+            border-radius: 20px 20px 0 0;
+            overflow: hidden;
+            touch-action: pan-y;
+            box-shadow: var(--shadow-lg);
+        }
+
+        .bottom-sheet.collapsed {
+            transform: translateY(calc(100% - 80px));
+            height: 80px;
+        }
+
+        .bottom-sheet-handle {
+            width: 40px;
+            height: 4px;
+            background: var(--border-color);
+            border-radius: 2px;
+            margin: 12px auto;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .bottom-sheet-handle:hover {
+            background: var(--accent-blue);
+        }
+
+        .bottom-sheet-content {
+            padding: 0 16px 16px;
+            height: calc(100% - 40px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Section Titles */
+        .section-title {
+            font-size: 18px;
+            font-weight: 600;
+            margin: 16px 0 12px;
+            color: var(--text-primary);
+        }
+
+        /* Districts Grid */
+        .districts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 8px;
+            margin-bottom: 16px;
+        }
+
+        .district-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .district-card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+        }
+
+        .district-card.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .district-name {
+            font-weight: 600;
+            font-size: 14px;
+            margin-bottom: 4px;
+        }
+
+        .district-offers {
+            font-size: 12px;
+            color: var(--text-secondary);
+            opacity: 0.8;
+        }
+
+        .district-card.active .district-offers {
+            color: rgba(255,255,255,0.8);
+        }
+
+        /* Offers List */
+        .offers-list {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .offer-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .offer-card:hover {
+            border-color: var(--accent-blue);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .offer-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .offer-title {
+            font-weight: 600;
+            font-size: 16px;
+            flex: 1;
+        }
+
+        .offer-discount {
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-green));
+            color: white;
+            padding: 4px 8px;
+            border-radius: var(--radius-sm);
+            font-weight: 700;
+            font-size: 14px;
+            margin-left: 8px;
+        }
+
+        .offer-address {
+            font-size: 13px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .offer-description {
+            font-size: 14px;
+            line-height: 1.4;
+            margin-bottom: 12px;
+        }
+
+        .offer-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .offer-time {
+            font-size: 12px;
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        .offer-actions {
+            display: flex;
+            gap: 6px;
+        }
+
+        .offer-action-btn {
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            width: 32px;
+            height: 32px;
+            color: var(--text-primary);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+            font-size: 12px;
+        }
+
+        .offer-action-btn:hover {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+        }
+
+        .offer-action-btn.like-btn.active {
+            background: var(--error);
+            border-color: var(--error);
+            color: white;
+        }
+
+        /* Business Panel */
+        .business-panel {
+            position: fixed;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--surface-bg);
+            z-index: 2000;
+            transition: left 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+        }
+
+        .business-panel.active {
+            left: 0;
+        }
+
+        .business-header {
+            background: var(--card-bg);
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: sticky;
+            top: 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .back-btn {
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            width: 36px;
+            height: 36px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .back-btn:hover {
+            background: var(--accent-blue);
+        }
+
+        .business-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .business-content {
+            padding: 16px;
+        }
+
+        .business-nav {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .business-nav-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 12px;
+            color: var(--text-primary);
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+            text-align: center;
+        }
+
+        .business-nav-btn:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .business-nav-btn.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .business-section {
+            display: none;
+        }
+
+        .business-section.active {
+            display: block;
+        }
+
+        /* Form Styles */
+        .form-group {
+            margin-bottom: 16px;
+        }
+
+        .form-label {
+            display: block;
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 6px;
+            color: var(--text-primary);
+        }
+
+        .form-input,
+        .form-select,
+        .form-textarea {
+            width: 100%;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 12px;
+            color: var(--text-primary);
+            font-size: 14px;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus,
+        .form-select:focus,
+        .form-textarea:focus {
+            outline: none;
+            border-color: var(--accent-blue);
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+
+        .form-textarea {
+            resize: vertical;
+            min-height: 80px;
+        }
+
+        .step-indicator {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 24px;
+            position: relative;
+        }
+
+        .step-indicator::before {
+            content: '';
+            position: absolute;
+            top: 15px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background: var(--border-color);
+            z-index: 1;
+        }
+
+        .step {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            position: relative;
+            z-index: 2;
+        }
+
+        .step-circle {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            background: var(--card-bg);
+            border: 2px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            transition: all 0.3s ease;
+        }
+
+        .step.active .step-circle {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .step-text {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .step.active .step-text {
+            color: var(--accent-blue);
+            font-weight: 500;
+        }
+
+        .ad-step {
+            display: none;
+        }
+
+        .ad-step.active {
+            display: block;
+        }
+
+        .form-navigation {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+        }
+
+        .nav-btn {
+            flex: 1;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .nav-btn:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .nav-btn.primary {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .nav-btn.primary:hover {
+            background: var(--accent-purple);
+            border-color: var(--accent-purple);
+        }
+
+        /* Empty States */
+        .empty-state {
+            text-align: center;
+            padding: 40px 20px;
+            color: var(--text-secondary);
+        }
+
+        .empty-state i {
+            font-size: 48px;
+            margin-bottom: 16px;
+            opacity: 0.5;
+        }
+
+        .empty-state h3 {
+            font-size: 18px;
+            margin-bottom: 8px;
+            color: var(--text-primary);
+        }
+
+        /* Loading States */
+        .loading-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.7);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            color: white;
+        }
+
+        .loading-spinner {
+            width: 40px;
+            height: 40px;
+            border: 4px solid rgba(255,255,255,0.3);
+            border-top: 4px solid white;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 16px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        /* Notification */
+        .notification {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-100px);
+            background: var(--accent-blue);
+            color: white;
+            padding: 12px 20px;
+            border-radius: var(--radius-md);
+            z-index: 10000;
+            transition: transform 0.3s ease;
+            box-shadow: var(--shadow-lg);
+            max-width: 90%;
+            text-align: center;
+        }
+
+        .notification.show {
+            transform: translateX(-50%) translateY(0);
+        }
+
+        /* Добавлю остальные стили для профиля, настроек и других компонентов */
+        .profile-panel {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--surface-bg);
+            z-index: 2000;
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+        }
+
+        .profile-panel.active {
+            right: 0;
+        }
+
+        .profile-header {
+            background: var(--card-bg);
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .profile-close-btn {
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            width: 36px;
+            height: 36px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .profile-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .profile-content {
+            padding: 16px;
+        }
+
+        .user-info {
+            text-align: center;
+            margin-bottom: 24px;
+        }
+
+        .user-avatar {
+            width: 80px;
+            height: 80px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 12px;
+            color: white;
+            font-size: 32px;
+        }
+
+        .user-name {
+            font-size: 20px;
+            font-weight: 600;
+            margin-bottom: 4px;
+        }
+
+        .user-id {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 8px;
+        }
+
+        .user-status {
+            font-size: 12px;
+            color: var(--success);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 4px;
+        }
+
+        .user-stats {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            text-align: center;
+        }
+
+        .stat-number {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--accent-blue);
+        }
+
+        .stat-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .profile-menu {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-bottom: 24px;
+        }
+
+        .menu-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 16px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .menu-item:hover {
+            border-color: var(--accent-blue);
+            transform: translateX(4px);
+        }
+
+        .menu-item i {
+            width: 20px;
+            color: var(--accent-blue);
+        }
+
+        .badge {
+            background: var(--error);
+            color: white;
+            padding: 2px 6px;
+            border-radius: 10px;
+            font-size: 10px;
+            margin-left: auto;
+        }
+
+        .profile-actions {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .profile-action-btn {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 12px 16px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .profile-action-btn:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .profile-action-btn.logout {
+            color: var(--error);
+            border-color: var(--error);
+        }
+
+        .profile-action-btn.logout:hover {
+            background: var(--error);
+            color: white;
+        }
+
+        /* Settings Panel */
+        .settings-panel {
+            position: fixed;
+            top: 0;
+            right: -100%;
+            width: 100%;
+            height: 100%;
+            background: var(--surface-bg);
+            z-index: 2000;
+            transition: right 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow-y: auto;
+        }
+
+        .settings-panel.active {
+            right: 0;
+        }
+
+        .settings-header {
+            background: var(--card-bg);
+            padding: 16px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            position: relative;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .settings-close-btn {
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            width: 36px;
+            height: 36px;
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.3s ease;
+        }
+
+        .settings-title {
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .settings-content {
+            padding: 16px;
+        }
+
+        .settings-section {
+            margin-bottom: 32px;
+        }
+
+        .settings-section-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 16px;
+            color: var(--text-primary);
+        }
+
+        .theme-options {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .theme-option {
+            flex: 1;
+            padding: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .theme-option:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .theme-option.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .notification-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .notification-option {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+        }
+
+        .notification-label {
+            font-size: 14px;
+        }
+
+        .toggle-switch {
+            position: relative;
+            display: inline-block;
+            width: 50px;
+            height: 24px;
+        }
+
+        .toggle-switch input {
+            opacity: 0;
+            width: 0;
+            height: 0;
+        }
+
+        .toggle-slider {
+            position: absolute;
+            cursor: pointer;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background-color: var(--border-color);
+            transition: .4s;
+            border-radius: 24px;
+        }
+
+        .toggle-slider:before {
+            position: absolute;
+            content: "";
+            height: 16px;
+            width: 16px;
+            left: 4px;
+            bottom: 4px;
+            background-color: white;
+            transition: .4s;
+            border-radius: 50%;
+        }
+
+        input:checked + .toggle-slider {
+            background-color: var(--accent-blue);
+        }
+
+        input:checked + .toggle-slider:before {
+            transform: translateX(26px);
+        }
+
+        .language-options {
+            display: flex;
+            gap: 10px;
+        }
+
+        .language-option {
+            flex: 1;
+            padding: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+
+        .language-option:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .language-option.active {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        .privacy-options {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .privacy-option {
+            padding: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            color: var(--text-primary);
+            font-size: 14px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .privacy-option:hover {
+            border-color: var(--accent-blue);
+        }
+
+        .privacy-option i {
+            color: var(--accent-blue);
+        }
+
+        /* Install Prompt */
+        .install-prompt {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            box-shadow: var(--shadow-lg);
+            z-index: 3000;
+            max-width: 90%;
+            width: 400px;
+            display: none;
+        }
+
+        .install-prompt.show {
+            display: block;
+            animation: slideUp 0.3s ease;
+        }
+
+        @keyframes slideUp {
+            from { transform: translateX(-50%) translateY(20px); opacity: 0; }
+            to { transform: translateX(-50%) translateY(0); opacity: 1; }
+        }
+
+        .install-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-bottom: 12px;
+        }
+
+        .install-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: var(--radius-sm);
+            background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 18px;
+        }
+
+        .install-title {
+            font-size: 16px;
+            font-weight: 600;
+        }
+
+        .install-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+            margin-bottom: 16px;
+        }
+
+        .install-actions {
+            display: flex;
+            gap: 10px;
+        }
+
+        .install-btn {
+            flex: 1;
+            padding: 10px;
+            background: var(--accent-blue);
+            border: none;
+            border-radius: var(--radius-sm);
+            color: white;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .install-btn:hover {
+            transform: translateY(-1px);
+            box-shadow: var(--shadow-sm);
+        }
+
+        .install-cancel {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .install-cancel:hover {
+            background: var(--surface-bg);
+        }
+
+        /* Offline Indicator */
+        .offline-indicator {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: var(--warning);
+            color: white;
+            padding: 8px 16px;
+            text-align: center;
+            font-size: 14px;
+            z-index: 4000;
+            transform: translateY(-100%);
+            transition: transform 0.3s ease;
+        }
+
+        .offline-indicator.show {
+            transform: translateY(0);
+        }
+
+        /* PWA Splash Screen */
+        .splash-screen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: var(--primary-bg);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            z-index: 9999;
+            transition: opacity 0.5s ease, visibility 0.5s ease;
+        }
+
+        .splash-logo {
+            width: 80px;
+            height: 80px;
+            border-radius: var(--radius-lg);
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-green));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: 20px;
+            animation: pulse 2s infinite;
+        }
+
+        .splash-logo i {
+            font-size: 40px;
+            color: white;
+        }
+
+        .splash-text {
+            font-size: 24px;
+            font-weight: 700;
+            background: linear-gradient(135deg, var(--accent-orange), var(--accent-green));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+        }
+
+        .splash-subtext {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        @keyframes pulse {
+            0% { transform: scale(1); }
+            50% { transform: scale(1.05); }
+            100% { transform: scale(1); }
+        }
+
+        /* Analytics Grid */
+        .analytics-grid {
+            display: grid;
+            grid-template-columns: repeat(2, 1fr);
+            gap: 12px;
+            margin-bottom: 24px;
+        }
+
+        .analytics-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            text-align: center;
+        }
+
+        .analytics-value {
+            font-size: 24px;
+            font-weight: 700;
+            margin-bottom: 4px;
+            color: var(--accent-blue);
+        }
+
+        .analytics-label {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        /* My Ads List */
+        .my-ad-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 12px;
+        }
+
+        .my-ad-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: 8px;
+        }
+
+        .my-ad-title {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .my-ad-status {
+            font-size: 12px;
+            padding: 2px 8px;
+            border-radius: 10px;
+            margin-top: 4px;
+            display: inline-block;
+        }
+
+        .status-pending {
+            background: var(--warning);
+            color: white;
+        }
+
+        .status-approved {
+            background: var(--success);
+            color: white;
+        }
+
+        .status-rejected {
+            background: var(--error);
+            color: white;
+        }
+
+        .my-ad-meta {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-top: 12px;
+        }
+
+        .my-ad-actions {
+            display: flex;
+            gap: 8px;
+        }
+
+        .my-ad-action {
+            background: var(--surface-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-sm);
+            padding: 6px 12px;
+            color: var(--text-primary);
+            font-size: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .my-ad-action:hover {
+            background: var(--accent-blue);
+            border-color: var(--accent-blue);
+            color: white;
+        }
+
+        /* Verification */
+        .verification-status {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .status-header {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+
+        .status-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 20px;
+        }
+
+        .status-icon.pending {
+            background: rgba(245, 158, 11, 0.1);
+            color: var(--warning);
+        }
+
+        .status-title {
+            font-weight: 600;
+            font-size: 16px;
+        }
+
+        .status-description {
+            font-size: 14px;
+            color: var(--text-secondary);
+        }
+
+        .verification-methods {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .verification-method {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+        }
+
+        .verification-method.active {
+            border-color: var(--accent-blue);
+        }
+
+        .method-icon {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--accent-blue);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 16px;
+        }
+
+        .method-title {
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        .method-description {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .submit-btn {
+            width: 100%;
+            background: var(--accent-blue);
+            border: none;
+            border-radius: var(--radius-md);
+            padding: 14px;
+            color: white;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+
+        .submit-btn:hover {
+            background: var(--accent-purple);
+            transform: translateY(-2px);
+            box-shadow: var(--shadow-md);
+        }
+
+        /* Confirmation Summary */
+        .confirmation-summary {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: var(--radius-md);
+            padding: 16px;
+            margin-bottom: 20px;
+        }
+
+        .summary-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .summary-item:last-child {
+            border-bottom: none;
+        }
+
+        .summary-label {
+            font-weight: 500;
+            color: var(--text-secondary);
+        }
+
+        .summary-value {
+            font-weight: 600;
+        }
+
+        .legal-checkbox {
+            display: flex;
+            align-items: flex-start;
+            gap: 8px;
+        }
+
+        .legal-checkbox input {
+            margin-top: 4px;
+        }
+
+        .legal-checkbox label {
+            font-size: 14px;
+            line-height: 1.4;
+        }
+
+        /* Verification Progress */
+        .verification-progress {
+            margin: 20px 0;
+        }
+
+        .progress-step {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 12px 0;
+            border-bottom: 1px solid var(--border-color);
+        }
+
+        .progress-step:last-child {
+            border-bottom: none;
+        }
+
+        .step-check {
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--border-color);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 12px;
+            color: white;
+        }
+
+        .progress-step.completed .step-check {
+            background: var(--success);
+        }
+
+        .step-text {
+            flex: 1;
+            font-size: 14px;
+        }
+
+        .step-status {
+            font-size: 12px;
+            color: var(--text-secondary);
+        }
+
+        .progress-step.completed .step-status {
+            color: var(--success);
+            font-weight: 500;
+        }
+
+        /* Media Queries */
+        @media (max-width: 480px) {
+            .districts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .analytics-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .business-nav {
+                grid-template-columns: 1fr;
+            }
+            
+            .install-prompt {
+                width: 90%;
+            }
+            
+            .user-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-height: 600px) {
+            .bottom-sheet {
+                height: 50vh;
+            }
+        }
+
+        @media (min-width: 768px) {
+            .business-panel,
+            .profile-panel,
+            .settings-panel {
+                width: 400px;
+                left: -400px;
+            }
+            
+            .profile-panel.active,
+            .settings-panel.active {
+                right: 0;
+                left: auto;
+            }
+        }
+        
+        /* Новые стили для улучшений */
+        .map-balloon {
+            max-width: 250px;
+            font-family: 'Inter', sans-serif;
+        }
+
+        .map-balloon h3 {
+            margin: 0 0 8px 0;
+            color: var(--text-primary);
+            font-size: 16px;
+        }
+
+        .map-balloon p {
+            margin: 4px 0;
+            color: var(--text-secondary);
+            font-size: 14px;
+        }
+
+        /* Улучшения для мобильных устройств */
+        @media (max-width: 360px) {
+            .brand-name {
+                font-size: 18px;
+            }
+            
+            .business-btn {
+                padding: 6px 10px;
+                font-size: 12px;
+            }
+        }
+
+        /* Анимации */
+        .fade-in {
+            animation: fadeIn 0.3s ease-in;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body class="tg-themed">
+    <!-- Splash Screen for PWA -->
+    <div class="splash-screen" id="splashScreen">
+        <div class="splash-logo">
+            <i class="fas fa-map-marked-alt"></i>
+        </div>
+        <div class="splash-text">MapChap</div>
+        <div class="splash-subtext">Загрузка приложения...</div>
+    </div>
+
+    <div class="app-container">
+        <!-- Main App -->
+        <div id="mainApp">
+            <!-- Header -->
+            <div class="header">
+                <div class="header-left">
+                    <button class="business-btn" id="businessBtn">
+                        <i class="fas fa-briefcase"></i> Бизнес
+                    </button>
+                    <div class="brand-name">MapChap</div>
+                </div>
+                <div class="header-actions">
+                    <button class="profile-btn has-notifications" id="profileBtn">
+                        <i class="fas fa-user"></i>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Map Container -->
+            <div class="map-container">
+                <div id="map"></div>
+                
+                <div class="map-placeholder" id="mapPlaceholder">
+                    <i class="fas fa-map-marked-alt"></i>
+                    <h3>Загрузка карты...</h3>
+                    <p>Инициализация Яндекс Карт</p>
+                </div>
+                
+                <!-- Custom Controls -->
+                <div class="controls-container">
+                    <button class="control-btn" id="zoomInBtn">+</button>
+                    <button class="control-btn" id="zoomOutBtn">−</button>
+                    <button class="control-btn location" id="locationBtn">📍</button>
+                </div>
+            </div>
+
+            <!-- Bottom Sheet -->
+            <div class="bottom-sheet expanded" id="bottomSheet">
+                <div class="bottom-sheet-handle" id="sheetHandle"></div>
+                <div class="bottom-sheet-content" id="sheetContent">
+                    <h3 class="section-title">Предложения по районам</h3>
+                    <div class="districts-grid">
+                        <div class="district-card active" data-district="all">
+                            <div class="district-name">Все районы</div>
+                            <div class="district-offers">12 предложений</div>
+                        </div>
+                        <div class="district-card" data-district="center">
+                            <div class="district-name">Центр</div>
+                            <div class="district-offers">8 предложений</div>
+                        </div>
+                        <div class="district-card" data-district="north">
+                            <div class="district-name">Север</div>
+                            <div class="district-offers">3 предложения</div>
+                        </div>
+                        <div class="district-card" data-district="south">
+                            <div class="district-name">Юг</div>
+                            <div class="district-offers">1 предложение</div>
+                        </div>
+                    </div>
+
+                    <h3 class="section-title" id="districtTitle">Все предложения</h3>
+                    <div class="offers-list" id="offersList">
+                        <!-- Offers will be loaded from API -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Business Panel -->
+            <div class="business-panel" id="businessPanel">
+                <div class="business-header">
+                    <button class="back-btn" id="backBtn">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h2 class="business-title">Бизнес-панель</h2>
+                </div>
+
+                <div class="business-content">
+                    <div class="business-nav">
+                        <button class="business-nav-btn active" data-section="create-ad">
+                            <i class="fas fa-plus-circle"></i>
+                            Создать объявление
+                        </button>
+                        <button class="business-nav-btn" data-section="my-ads">
+                            <i class="fas fa-ad"></i>
+                            Мои объявления
+                        </button>
+                        <button class="business-nav-btn" data-section="analytics">
+                            <i class="fas fa-chart-line"></i>
+                            Аналитика
+                        </button>
+                        <button class="business-nav-btn" data-section="verification">
+                            <i class="fas fa-shield-alt"></i>
+                            Верификация
+                        </button>
+                    </div>
+
+                    <!-- Create Ad Section -->
+                    <div class="business-section active" id="create-ad">
+                        <div class="create-ad-form">
+                            <div class="step-indicator">
+                                <div class="step active" id="step1">
+                                    <div class="step-circle">1</div>
+                                    <div class="step-text">Данные</div>
+                                </div>
+                                <div class="step" id="step2">
+                                    <div class="step-circle">2</div>
+                                    <div class="step-text">Верификация</div>
+                                </div>
+                                <div class="step" id="step3">
+                                    <div class="step-circle">3</div>
+                                    <div class="step-text">Подтверждение</div>
+                                </div>
+                            </div>
+
+                            <!-- Step 1: Basic Data -->
+                            <div class="ad-step active" id="create-ad-step-1">
+                                <div class="form-group">
+                                    <label class="form-label">Название заведения *</label>
+                                    <input type="text" class="form-input" id="adName" placeholder="Например: Кофейня Central" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Категория *</label>
+                                    <select class="form-select" id="adCategory" required>
+                                        <option value="">Выберите категорию</option>
+                                        <option value="cafe">🍽️ Кафе и рестораны</option>
+                                        <option value="shop">🛍️ Магазины</option>
+                                        <option value="services">🔧 Услуги</option>
+                                        <option value="education">🎓 Образование</option>
+                                        <option value="health">🏥 Здоровье и спорт</option>
+                                        <option value="beauty">💄 Красота</option>
+                                        <option value="entertainment">🎭 Развлечения</option>
+                                        <option value="other">📌 Другое</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Район *</label>
+                                    <select class="form-select" id="adDistrict" required>
+                                        <option value="">Выберите район</option>
+                                        <option value="center">Центр</option>
+                                        <option value="north">Север</option>
+                                        <option value="south">Юг</option>
+                                    </select>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Адрес *</label>
+                                    <input type="text" class="form-input" id="adAddress" placeholder="Введите адрес" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Телефон для связи *</label>
+                                    <input type="tel" class="form-input" id="adPhone" placeholder="+7 (999) 123-45-67" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Описание предложения *</label>
+                                    <textarea class="form-textarea" id="adDescription" placeholder="Опишите ваше специальное предложение..." required></textarea>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Скидка (%) *</label>
+                                    <input type="number" class="form-input" id="adDiscount" placeholder="Например: 30" min="1" max="99" required>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label class="form-label">Время действия</label>
+                                    <input type="text" class="form-input" id="adTime" placeholder="Например: до 18:00 или ежедневно">
+                                </div>
+                                
+                                <div class="form-navigation">
+                                    <button class="nav-btn" onclick="goToStep(2)">
+                                        Далее <i class="fas fa-arrow-right"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 2: Verification -->
+                            <div class="ad-step" id="create-ad-step-2">
+                                <h3 class="section-title">Подтверждение данных</h3>
+                                
+                                <div class="confirmation-summary">
+                                    <div class="summary-item">
+                                        <span class="summary-label">Название:</span>
+                                        <span class="summary-value" id="summary-name">-</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Категория:</span>
+                                        <span class="summary-value" id="summary-category">-</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Район:</span>
+                                        <span class="summary-value" id="summary-district">-</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Адрес:</span>
+                                        <span class="summary-value" id="summary-address">-</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Телефон:</span>
+                                        <span class="summary-value" id="summary-phone">-</span>
+                                    </div>
+                                    <div class="summary-item">
+                                        <span class="summary-label">Скидка:</span>
+                                        <span class="summary-value" id="summary-discount">-</span>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-group">
+                                    <div class="legal-checkbox">
+                                        <input type="checkbox" id="legalAgreement" required>
+                                        <label for="legalAgreement">Я подтверждаю, что предоставленная информация верна, и соглашаюсь с правилами размещения объявлений</label>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-navigation">
+                                    <button class="nav-btn" onclick="goToStep(1)">
+                                        <i class="fas fa-arrow-left"></i> Назад
+                                    </button>
+                                    <button class="nav-btn primary" onclick="goToStep(3)" id="confirmDataBtn">
+                                        Подтвердить <i class="fas fa-check"></i>
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Step 3: Confirmation -->
+                            <div class="ad-step" id="create-ad-step-3">
+                                <h3 class="section-title">Отправка на модерацию</h3>
+                                
+                                <div class="verification-status">
+                                    <div class="status-header">
+                                        <div class="status-icon pending">
+                                            <i class="fas fa-clock"></i>
+                                        </div>
+                                        <div>
+                                            <div class="status-title">Ожидание модерации</div>
+                                            <div class="status-description">Ваше объявление будет проверено в течение 24 часов</div>
+                                        </div>
+                                    </div>
+                                    
+                                    <div class="verification-progress">
+                                        <div class="progress-step completed">
+                                            <div class="step-check">
+                                                <i class="fas fa-check"></i>
+                                            </div>
+                                            <div class="step-text">Данные заполнены</div>
+                                            <div class="step-status">Готово</div>
+                                        </div>
+                                        <div class="progress-step">
+                                            <div class="step-check">
+                                                <i class="fas fa-check"></i>
+                                            </div>
+                                            <div class="step-text">Проверка информации</div>
+                                            <div class="step-status">В процессе</div>
+                                        </div>
+                                        <div class="progress-step">
+                                            <div class="step-check">
+                                                <i class="fas fa-check"></i>
+                                            </div>
+                                            <div class="step-text">Публикация на карте</div>
+                                            <div class="step-status">Ожидание</div>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="form-navigation">
+                                    <button class="nav-btn" onclick="goToStep(2)">
+                                        <i class="fas fa-arrow-left"></i> Назад
+                                    </button>
+                                    <button class="nav-btn primary" onclick="submitAd()" id="submitAdBtn">
+                                        Отправить на модерацию <i class="fas fa-paper-plane"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- My Ads Section -->
+                    <div class="business-section" id="my-ads">
+                        <h3 class="section-title">Мои объявления</h3>
+                        
+                        <div class="my-ads-list" id="myAdsList">
+                            <div class="empty-state">
+                                <i class="fas fa-ad"></i>
+                                <h3>У вас пока нет объявлений</h3>
+                                <p>Создайте первое объявление, чтобы привлечь клиентов</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Analytics Section -->
+                    <div class="business-section" id="analytics">
+                        <h3 class="section-title">Аналитика</h3>
+                        
+                        <div class="analytics-grid">
+                            <div class="analytics-card">
+                                <div class="analytics-value" id="viewsCount">0</div>
+                                <div class="analytics-label">Просмотры</div>
+                            </div>
+                            <div class="analytics-card">
+                                <div class="analytics-value" id="clicksCount">0</div>
+                                <div class="analytics-label">Клики</div>
+                            </div>
+                            <div class="analytics-card">
+                                <div class="analytics-value" id="conversionRate">0%</div>
+                                <div class="analytics-label">Конверсия</div>
+                            </div>
+                            <div class="analytics-card">
+                                <div class="analytics-value" id="activeAds">0</div>
+                                <div class="analytics-label">Активные объявления</div>
+                            </div>
+                        </div>
+                        
+                        <h4 class="section-title">Статистика за последние 7 дней</h4>
+                        <div class="analytics-chart">
+                            <p>График статистики появится после накопления данных</p>
+                        </div>
+                    </div>
+
+                    <!-- Verification Section -->
+                    <div class="business-section" id="verification">
+                        <h3 class="section-title">Верификация бизнеса</h3>
+                        
+                        <div class="verification-status">
+                            <div class="status-header">
+                                <div class="status-icon pending">
+                                    <i class="fas fa-clock"></i>
+                                </div>
+                                <div>
+                                    <div class="status-title">Требуется верификация</div>
+                                    <div class="status-description">Пройдите верификацию для публикации объявлений</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="verification-methods">
+                            <div class="verification-method active">
+                                <div class="method-icon">
+                                    <i class="fas fa-mobile-alt"></i>
+                                </div>
+                                <div class="method-info">
+                                    <div class="method-title">Подтверждение телефона</div>
+                                    <div class="method-description">Мы отправим код подтверщения на ваш номер</div>
+                                </div>
+                            </div>
+                            
+                            <div class="verification-method">
+                                <div class="method-icon">
+                                    <i class="fas fa-id-card"></i>
+                                </div>
+                                <div class="method-info">
+                                    <div class="method-title">Подтверждение документов</div>
+                                    <div class="method-description">Загрузите скан-копии документов компании</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label class="form-label">Номер телефона *</label>
+                            <input type="tel" class="form-input" id="verificationPhone" placeholder="+7 (999) 123-45-67" required>
+                        </div>
+                        
+                        <button class="submit-btn" onclick="startVerification()">
+                            <i class="fas fa-shield-alt"></i> Начать верификацию
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Profile Panel -->
+            <div class="profile-panel" id="profilePanel">
+                <div class="profile-header">
+                    <button class="profile-close-btn" id="profileCloseBtn">
+                        <i class="fas fa-times"></i>
+                    </button>
+                    <h2 class="profile-title">Профиль</h2>
+                </div>
+                <div class="profile-content">
+                    <div class="user-info">
+                        <div class="user-avatar">
+                            <i class="fas fa-user"></i>
+                        </div>
+                        <div class="user-name" id="profileUserName">Пользователь</div>
+                        <div class="user-id" id="profileUserId">ID: 123456</div>
+                        <div class="user-status">
+                            <i class="fas fa-check-circle"></i> Аккаунт подтвержден
+                        </div>
+                    </div>
+                    
+                    <div class="user-stats">
+                        <div class="stat-card">
+                            <div class="stat-number" id="profileFavorites">5</div>
+                            <div class="stat-label">Избранное</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="profileViews">156</div>
+                            <div class="stat-label">Просмотры</div>
+                        </div>
+                        <div class="stat-card">
+                            <div class="stat-number" id="profileAds">0</div>
+                            <div class="stat-label">Объявления</div>
+                        </div>
+                    </div>
+                    
+                    <div class="profile-menu">
+                        <div class="menu-item" onclick="showFavorites()">
+                            <i class="fas fa-heart"></i>
+                            <span>Избранные предложения</span>
+                        </div>
+                        <div class="menu-item" onclick="showHistory()">
+                            <i class="fas fa-history"></i>
+                            <span>История просмотров</span>
+                        </div>
+                        <div class="menu-item" onclick="showMyAds()">
+                            <i class="fas fa-ad"></i>
+                            <span>Мои объявления</span>
+                        </div>
+                        <div class="menu-item" onclick="showSettings()">
+                            <i class="fas fa-cog"></i>
+                            <span>Настройки</span>
+                        </div>
+                        <div class="menu-item" onclick="showNotifications()">
+                            <i class="fas fa-bell"></i>
+                            <span>Уведомления</span>
+                            <span class="badge">3</span>
+                        </div>
+                    </div>
+
+                    <div class="profile-actions">
+                        <button class="profile-action-btn" onclick="inviteFriends()">
+                            <i class="fas fa-user-plus"></i>
+                            Пригласить друзей
+                        </button>
+                        <button class="profile-action-btn logout" onclick="logout()">
+                            <i class="fas fa-sign-out-alt"></i>
+                            Выйти из аккаунта
+                        </button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Settings Panel -->
+            <div class="settings-panel" id="settingsPanel">
+                <div class="settings-header">
+                    <button class="settings-close-btn" id="settingsCloseBtn">
+                        <i class="fas fa-arrow-left"></i>
+                    </button>
+                    <h2 class="settings-title">Настройки</h2>
+                </div>
+                <div class="settings-content">
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">Тема оформления</h3>
+                        <div class="theme-options">
+                            <button class="theme-option active" data-theme="dark">Темная</button>
+                            <button class="theme-option" data-theme="light">Светлая</button>
+                            <button class="theme-option" data-theme="auto">Авто</button>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">Уведомления</h3>
+                        <div class="notification-options">
+                            <div class="notification-option">
+                                <span class="notification-label">Push-уведомления</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="pushNotifications" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="notification-option">
+                                <span class="notification-label">Уведомления о новых предложениях</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="newOffersNotifications" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                            <div class="notification-option">
+                                <span class="notification-label">Уведомления о скидках рядом</span>
+                                <label class="toggle-switch">
+                                    <input type="checkbox" id="nearbyDiscountsNotifications" checked>
+                                    <span class="toggle-slider"></span>
+                                </label>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">Язык</h3>
+                        <div class="language-options">
+                            <button class="language-option active" data-lang="ru">Русский</button>
+                            <button class="language-option" data-lang="en">English</button>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">Конфиденциальность</h3>
+                        <div class="privacy-options">
+                            <div class="privacy-option" onclick="exportData()">
+                                <i class="fas fa-download"></i>
+                                <span>Экспорт данных</span>
+                            </div>
+                            <div class="privacy-option" onclick="clearHistory()">
+                                <i class="fas fa-trash"></i>
+                                <span>Очистить историю</span>
+                            </div>
+                            <div class="privacy-option" onclick="deleteAccount()">
+                                <i class="fas fa-user-times"></i>
+                                <span>Удалить аккаунт</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="settings-section">
+                        <h3 class="settings-section-title">О приложении</h3>
+                        <div class="about-info">
+                            <p>MapChap v1.0.0</p>
+                            <p>Карта выгодных предложений вашего города</p>
+                            <button class="profile-action-btn" onclick="checkForUpdates()">
+                                <i class="fas fa-sync"></i>
+                                Проверить обновления
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Install Prompt -->
+            <div class="install-prompt" id="installPrompt">
+                <div class="install-header">
+                    <div class="install-icon">
+                        <i class="fas fa-map-marked-alt"></i>
+                    </div>
+                    <div class="install-title">Установить MapChap</div>
+                </div>
+                <div class="install-description">
+                    Установите приложение для быстрого доступа и работы в офлайн-режиме
+                </div>
+                <div class="install-actions">
+                    <button class="install-btn" id="installButton">Установить</button>
+                    <button class="install-btn install-cancel" id="installCancel">Позже</button>
+                </div>
+            </div>
+
+            <!-- Offline Indicator -->
+            <div class="offline-indicator" id="offlineIndicator">
+                <i class="fas fa-wifi"></i> Отсутствует подключение к интернету
+            </div>
+
+            <!-- Notification -->
+            <div class="notification" id="notification"></div>
+            
+            <!-- Loading Overlay -->
+            <div class="loading-overlay" id="loadingOverlay" style="display: none;">
+                <div class="loading-spinner"></div>
+                <p>Загрузка...</p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let map;
+        let tg;
+        let userLocation = null;
+        let currentDistrict = 'all';
+        let offers = [];
+        let userData = null;
+
+        // Initialize Telegram Web App
+        function initTelegramApp() {
+            tg = window.Telegram.WebApp;
+            tg.expand();
+            tg.enableClosingConfirmation();
+            
+            // Set theme based on Telegram
+            if (tg.colorScheme === 'light') {
+                document.body.setAttribute('data-theme', 'light');
+            }
+            
+            // Get user data
+            userData = tg.initDataUnsafe?.user;
+            if (userData) {
+                updateUserProfile();
+            }
+            
+            console.log('Telegram Web App initialized');
+        }
+
+        // Initialize map
+        function initMap() {
+            ymaps.ready(function() {
+                try {
+                    map = new ymaps.Map('map', {
+                        center: [55.7558, 37.6173], // Moscow coordinates
+                        zoom: 12,
+                        controls: [] // Remove all default controls
+                    }, {
+                        suppressMapOpenBlock: true,
+                        suppressObsoleteBrowserNotifier: true
+                    });
+                    
+                    // Hide placeholder
+                    document.getElementById('mapPlaceholder').style.display = 'none';
+                    
+                    // Add custom behaviors
+                    setupMapBehaviors();
+                    loadOffers();
+                    
+                } catch (error) {
+                    console.error('Map initialization failed:', error);
+                    showNotification('Ошибка загрузки карты', 'error');
+                }
+            });
+        }
+
+        // Setup map behaviors and controls
+        function setupMapBehaviors() {
+            // Zoom controls
+            document.getElementById('zoomInBtn').addEventListener('click', function() {
+                map.setZoom(map.getZoom() + 1);
+            });
+            
+            document.getElementById('zoomOutBtn').addEventListener('click', function() {
+                map.setZoom(map.getZoom() - 1);
+            });
+            
+            // Location button
+            document.getElementById('locationBtn').addEventListener('click', function() {
+                getUserLocation();
+            });
+            
+            // Map click handler
+            map.events.add('click', function(e) {
+                const coords = e.get('coords');
+                console.log('Map clicked at:', coords);
+            });
+        }
+
+        // Get user location
+        function getUserLocation() {
+            if (navigator.geolocation) {
+                navigator.geolocation.getCurrentPosition(
+                    function(position) {
+                        userLocation = [position.coords.latitude, position.coords.longitude];
+                        map.setCenter(userLocation, 15);
+                        
+                        // Add user location marker
+                        const userMarker = new ymaps.Placemark(userLocation, {
+                            hintContent: 'Ваше местоположение',
+                            balloonContent: 'Вы здесь'
+                        }, {
+                            preset: 'islands#blueCircleIcon'
+                        });
+                        
+                        map.geoObjects.add(userMarker);
+                        showNotification('Местоположение определено');
+                    },
+                    function(error) {
+                        console.error('Geolocation error:', error);
+                        showNotification('Не удалось определить местоположение', 'error');
+                    },
+                    {
+                        enableHighAccuracy: true,
+                        timeout: 10000,
+                        maximumAge: 60000
+                    }
+                );
+            } else {
+                showNotification('Геолокация не поддерживается', 'error');
+            }
+        }
+
+        // Load offers from API
+        async function loadOffers() {
+            try {
+                showLoading(true);
+                
+                // Mock data - replace with actual API call
+                const mockOffers = [
+                    {
+                        id: 1,
+                        title: "Кофейня Central",
+                        discount: 30,
+                        address: "ул. Примерная, 15",
+                        description: "Скидка на все виды кофе при заказе через приложение",
+                        district: "center",
+                        coordinates: [55.7558, 37.6176],
+                        time: "до 18:00",
+                        category: "cafe"
+                    },
+                    {
+                        id: 2,
+                        title: "Магазин Fresh",
+                        discount: 20,
+                        address: "пр. Главный, 42",
+                        description: "Скидка на овощи и фрукты",
+                        district: "north",
+                        coordinates: [55.7658, 37.6276],
+                        time: "ежедневно",
+                        category: "shop"
+                    },
+                    {
+                        id: 3,
+                        title: "Салон красоты Elite",
+                        discount: 25,
+                        address: "ул. Цветочная, 8",
+                        description: "Скидка на стрижку и укладку",
+                        district: "south",
+                        coordinates: [55.7458, 37.6076],
+                        time: "по будням",
+                        category: "beauty"
+                    }
+                ];
+                
+                offers = mockOffers;
+                updateMapMarkers();
+                updateOffersList();
+                
+            } catch (error) {
+                console.error('Error loading offers:', error);
+                showNotification('Ошибка загрузки предложений', 'error');
+            } finally {
+                showLoading(false);
+            }
+        }
+
+        // Update map markers
+        function updateMapMarkers() {
+            // Clear existing markers
+            map.geoObjects.removeAll();
+            
+            // Filter offers by current district
+            const filteredOffers = currentDistrict === 'all' 
+                ? offers 
+                : offers.filter(offer => offer.district === currentDistrict);
+            
+            // Add markers for each offer
+            filteredOffers.forEach(offer => {
+                const marker = new ymaps.Placemark(offer.coordinates, {
+                    hintContent: offer.title,
+                    balloonContent: `
+                        <div class="map-balloon">
+                            <h3>${offer.title}</h3>
+                            <p><strong>Скидка: ${offer.discount}%</strong></p>
+                            <p>${offer.description}</p>
+                            <p>${offer.address}</p>
+                            <p><small>${offer.time}</small></p>
+                        </div>
+                    `
+                }, {
+                    preset: 'islands#blueShoppingIcon'
+                });
+                
+                marker.events.add('click', function() {
+                    showOfferDetails(offer);
+                });
+                
+                map.geoObjects.add(marker);
+            });
+        }
+
+        // Update offers list in bottom sheet
+        function updateOffersList() {
+            const offersList = document.getElementById('offersList');
+            const filteredOffers = currentDistrict === 'all' 
+                ? offers 
+                : offers.filter(offer => offer.district === currentDistrict);
+            
+            if (filteredOffers.length === 0) {
+                offersList.innerHTML = `
+                    <div class="empty-state">
+                        <i class="fas fa-map-marker-alt"></i>
+                        <h3>Нет предложений</h3>
+                        <p>В выбранном районе пока нет специальных предложений</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            offersList.innerHTML = filteredOffers.map(offer => `
+                <div class="offer-card" data-offer-id="${offer.id}">
+                    <div class="offer-header">
+                        <div class="offer-title">${offer.title}</div>
+                        <div class="offer-discount">-${offer.discount}%</div>
+                    </div>
+                    <div class="offer-address">
+                        <i class="fas fa-map-marker-alt"></i> ${offer.address}
+                    </div>
+                    <div class="offer-description">${offer.description}</div>
+                    <div class="offer-meta">
+                        <div class="offer-time">
+                            <i class="fas fa-clock"></i> ${offer.time}
+                        </div>
+                        <div class="offer-actions">
+                            <button class="offer-action-btn like-btn" onclick="toggleLike(${offer.id})">
+                                <i class="far fa-heart"></i>
+                            </button>
+                            <button class="offer-action-btn" onclick="shareOffer(${offer.id})">
+                                <i class="fas fa-share"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `).join('');
+            
+            // Add click handlers
+            document.querySelectorAll('.offer-card').forEach(card => {
+                card.addEventListener('click', function(e) {
+                    if (!e.target.closest('.offer-action-btn')) {
+                        const offerId = parseInt(this.dataset.offerId);
+                        const offer = offers.find(o => o.id === offerId);
+                        showOfferDetails(offer);
+                    }
+                });
+            });
+        }
+
+        // Show offer details
+        function showOfferDetails(offer) {
+            // Center map on offer
+            map.setCenter(offer.coordinates, 16);
+            
+            // Show notification with offer details
+            showNotification(`Показано: ${offer.title}`, 'info');
+        }
+
+        // Toggle like for offer
+        function toggleLike(offerId) {
+            const likeBtn = document.querySelector(`[data-offer-id="${offerId}"] .like-btn`);
+            likeBtn.classList.toggle('active');
+            likeBtn.querySelector('i').classList.toggle('far');
+            likeBtn.querySelector('i').classList.toggle('fas');
+            
+            showNotification('Добавлено в избранное');
+        }
+
+        // Share offer
+        function shareOffer(offerId) {
+            const offer = offers.find(o => o.id === offerId);
+            if (tg && tg.showPopup) {
+                tg.showPopup({
+                    title: 'Поделиться предложением',
+                    message: `Скидка ${offer.discount}% в ${offer.title}`,
+                    buttons: [
+                        {type: 'default', text: 'Копировать ссылку', id: 'copy'},
+                        {type: 'cancel', text: 'Закрыть', id: 'close'}
+                    ]
+                }, function(buttonId) {
+                    if (buttonId === 'copy') {
+                        navigator.clipboard.writeText(`Скидка ${offer.discount}% в ${offer.title} - ${offer.address}`);
+                        showNotification('Ссылка скопирована');
+                    }
+                });
+            } else {
+                // Fallback for browser
+                if (navigator.share) {
+                    navigator.share({
+                        title: offer.title,
+                        text: `Скидка ${offer.discount}% - ${offer.description}`,
+                        url: window.location.href
+                    });
+                } else {
+                    navigator.clipboard.writeText(`Скидка ${offer.discount}% в ${offer.title}`);
+                    showNotification('Ссылка скопирована в буфер');
+                }
+            }
+        }
+
+        // District filtering
+        function setupDistrictFilter() {
+            document.querySelectorAll('.district-card').forEach(card => {
+                card.addEventListener('click', function() {
+                    // Remove active class from all cards
+                    document.querySelectorAll('.district-card').forEach(c => c.classList.remove('active'));
+                    
+                    // Add active class to clicked card
+                    this.classList.add('active');
+                    
+                    // Update current district
+                    currentDistrict = this.dataset.district;
+                    
+                    // Update district title
+                    const districtTitle = document.getElementById('districtTitle');
+                    districtTitle.textContent = this.querySelector('.district-name').textContent + ' - предложения';
+                    
+                    // Update map and list
+                    updateMapMarkers();
+                    updateOffersList();
+                });
+            });
+        }
+
+        // Bottom sheet behavior
+        function setupBottomSheet() {
+            const sheet = document.getElementById('bottomSheet');
+            const handle = document.getElementById('sheetHandle');
+            let startY, startHeight;
+            
+            handle.addEventListener('touchstart', function(e) {
+                startY = e.touches[0].clientY;
+                startHeight = parseInt(document.defaultView.getComputedStyle(sheet).height);
+                sheet.style.transition = 'none';
+            });
+            
+            handle.addEventListener('touchmove', function(e) {
+                const delta = startY - e.touches[0].clientY;
+                const newHeight = Math.max(80, Math.min(window.innerHeight * 0.7, startHeight + delta));
+                sheet.style.height = newHeight + 'px';
+            });
+            
+            handle.addEventListener('touchend', function() {
+                sheet.style.transition = '';
+                const currentHeight = parseInt(sheet.style.height);
+                if (currentHeight < 150) {
+                    sheet.classList.add('collapsed');
+                } else {
+                    sheet.classList.remove('collapsed');
+                }
+            });
+            
+            // Click handler for toggle
+            handle.addEventListener('click', function() {
+                sheet.classList.toggle('collapsed');
+            });
+        }
+
+        // Business panel functionality
+        function setupBusinessPanel() {
+            const businessBtn = document.getElementById('businessBtn');
+            const businessPanel = document.getElementById('businessPanel');
+            const backBtn = document.getElementById('backBtn');
+            
+            businessBtn.addEventListener('click', function() {
+                businessPanel.classList.add('active');
+            });
+            
+            backBtn.addEventListener('click', function() {
+                businessPanel.classList.remove('active');
+            });
+            
+            // Business navigation
+            document.querySelectorAll('.business-nav-btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const section = this.dataset.section;
+                    
+                    // Update active nav button
+                    document.querySelectorAll('.business-nav-btn').forEach(b => b.classList.remove('active'));
+                    this.classList.add('active');
+                    
+                    // Show corresponding section
+                    document.querySelectorAll('.business-section').forEach(s => s.classList.remove('active'));
+                    document.getElementById(section).classList.add('active');
+                });
+            });
+        }
+
+        // Profile panel functionality
+        function setupProfilePanel() {
+            const profileBtn = document.getElementById('profileBtn');
+            const profilePanel = document.getElementById('profilePanel');
+            const profileCloseBtn = document.getElementById('profileCloseBtn');
+            
+            profileBtn.addEventListener('click', function() {
+                profilePanel.classList.add('active');
+            });
+            
+            profileCloseBtn.addEventListener('click', function() {
+                profilePanel.classList.remove('active');
+            });
+        }
+
+        // Settings panel functionality
+        function setupSettingsPanel() {
+            const settingsCloseBtn = document.getElementById('settingsCloseBtn');
+            
+            settingsCloseBtn.addEventListener('click', function() {
+                document.getElementById('settingsPanel').classList.remove('active');
+            });
+            
+            // Theme switching
+            document.querySelectorAll('.theme-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.theme-option').forEach(o => o.classList.remove('active'));
+                    this.classList.add('active');
+                    document.body.setAttribute('data-theme', this.dataset.theme);
+                    localStorage.setItem('theme', this.dataset.theme);
+                });
+            });
+            
+            // Language switching
+            document.querySelectorAll('.language-option').forEach(option => {
+                option.addEventListener('click', function() {
+                    document.querySelectorAll('.language-option').forEach(o => o.classList.remove('active'));
+                    this.classList.add('active');
+                    // Here you would implement language change
+                    showNotification('Язык изменен на ' + (this.dataset.lang === 'ru' ? 'Русский' : 'English'));
+                });
+            });
+        }
+
+        // Form navigation for ad creation
+        function goToStep(step) {
+            // Validate step 1 before proceeding
+            if (step === 2 && !validateStep1()) {
+                showNotification('Заполните все обязательные поля', 'error');
+                return;
+            }
+            
+            // Update step indicators
+            document.querySelectorAll('.step').forEach((s, index) => {
+                if (index + 1 <= step) {
+                    s.classList.add('active');
+                } else {
+                    s.classList.remove('active');
+                }
+            });
+            
+            // Show corresponding step
+            document.querySelectorAll('.ad-step').forEach(s => s.classList.remove('active'));
+            document.getElementById(`create-ad-step-${step}`).classList.add('active');
+            
+            // Update summary for step 2
+            if (step === 2) {
+                updateSummary();
+            }
+        }
+
+        function validateStep1() {
+            const required = ['adName', 'adCategory', 'adDistrict', 'adAddress', 'adPhone', 'adDescription', 'adDiscount'];
+            return required.every(field => {
+                const value = document.getElementById(field).value.trim();
+                return value !== '';
+            });
+        }
+
+        function updateSummary() {
+            document.getElementById('summary-name').textContent = document.getElementById('adName').value;
+            document.getElementById('summary-category').textContent = document.getElementById('adCategory').options[document.getElementById('adCategory').selectedIndex].text;
+            document.getElementById('summary-district').textContent = document.getElementById('adDistrict').options[document.getElementById('adDistrict').selectedIndex].text;
+            document.getElementById('summary-address').textContent = document.getElementById('adAddress').value;
+            document.getElementById('summary-phone').textContent = document.getElementById('adPhone').value;
+            document.getElementById('summary-discount').textContent = document.getElementById('adDiscount').value + '%';
+        }
+
+        function submitAd() {
+            const submitBtn = document.getElementById('submitAdBtn');
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Отправка...';
+            
+            // Simulate API call
+            setTimeout(() => {
+                showNotification('Объявление отправлено на модерацию!', 'success');
+                document.getElementById('businessPanel').classList.remove('active');
+                
+                // Reset form
+                document.querySelectorAll('.ad-step').forEach(s => s.classList.remove('active'));
+                document.getElementById('create-ad-step-1').classList.add('active');
+                document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+                document.getElementById('step1').classList.add('active');
+                
+                document.getElementById('create-ad-form').reset();
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = 'Отправить на модерацию <i class="fas fa-paper-plane"></i>';
+            }, 2000);
+        }
+
+        // Update user profile
+        function updateUserProfile() {
+            if (userData) {
+                const userName = userData.first_name + (userData.last_name ? ' ' + userData.last_name : '');
+                document.getElementById('profileUserName').textContent = userName;
+                document.getElementById('profileUserId').textContent = `ID: ${userData.id}`;
+                
+                // Update avatar with user photo if available
+                if (userData.photo_url) {
+                    document.querySelector('.user-avatar').innerHTML = `<img src="${userData.photo_url}" alt="${userName}" style="width:100%;height:100%;border-radius:50%;">`;
+                }
+            }
+        }
+
+        // Notification system
+        function showNotification(message, type = 'info') {
+            const notification = document.getElementById('notification');
+            notification.textContent = message;
+            notification.className = 'notification';
+            
+            // Add type class
+            if (type === 'error') {
+                notification.style.background = 'var(--error)';
+            } else if (type === 'success') {
+                notification.style.background = 'var(--success)';
+            } else if (type === 'warning') {
+                notification.style.background = 'var(--warning)';
+            } else {
+                notification.style.background = 'var(--accent-blue)';
+            }
+            
+            notification.classList.add('show');
+            
+            setTimeout(() => {
+                notification.classList.remove('show');
+            }, 3000);
+        }
+
+        // Loading overlay
+        function showLoading(show) {
+            document.getElementById('loadingOverlay').style.display = show ? 'flex' : 'none';
+        }
+
+        // PWA functionality
+        function setupPWA() {
+            // Register service worker
+            if ('serviceWorker' in navigator) {
+                navigator.serviceWorker.register('/sw.js')
+                    .then(registration => console.log('SW registered'))
+                    .catch(error => console.log('SW registration failed'));
+            }
+            
+            // Show install prompt
+            let deferredPrompt;
+            window.addEventListener('beforeinstallprompt', (e) => {
+                e.preventDefault();
+                deferredPrompt = e;
+                
+                // Show install prompt after 5 seconds
+                setTimeout(() => {
+                    if (deferredPrompt) {
+                        document.getElementById('installPrompt').classList.add('show');
+                    }
+                }, 5000);
+            });
+            
+            // Install button
+            document.getElementById('installButton').addEventListener('click', async () => {
+                if (deferredPrompt) {
+                    deferredPrompt.prompt();
+                    const { outcome } = await deferredPrompt.userChoice;
+                    if (outcome === 'accepted') {
+                        document.getElementById('installPrompt').classList.remove('show');
+                    }
+                    deferredPrompt = null;
+                }
+            });
+            
+            // Install cancel
+            document.getElementById('installCancel').addEventListener('click', () => {
+                document.getElementById('installPrompt').classList.remove('show');
+            });
+        }
+
+        // Profile menu functions
+        function showFavorites() {
+            showNotification('Раздел "Избранное" в разработке');
+        }
+
+        function showHistory() {
+            showNotification('Раздел "История" в разработке');
+        }
+
+        function showMyAds() {
+            document.getElementById('profilePanel').classList.remove('active');
+            document.getElementById('businessPanel').classList.add('active');
+            document.querySelector('[data-section="my-ads"]').click();
+        }
+
+        function showSettings() {
+            document.getElementById('profilePanel').classList.remove('active');
+            document.getElementById('settingsPanel').classList.add('active');
+        }
+
+        function showNotifications() {
+            showNotification('Раздел "Уведомления" в разработке');
+        }
+
+        function inviteFriends() {
+            if (tg && tg.showShare) {
+                tg.showShare({
+                    text: 'Присоединяйся к MapChap - находи лучшие предложения рядом!',
+                    url: 'https://t.me/your_bot'
+                });
+            } else {
+                navigator.clipboard.writeText('Присоединяйся к MapChap - находи лучшие предложения рядом!');
+                showNotification('Приглашение скопировано');
+            }
+        }
+
+        function logout() {
+            if (tg) {
+                tg.close();
+            } else {
+                showNotification('Выход выполнен');
+                document.getElementById('profilePanel').classList.remove('active');
+            }
+        }
+
+        // Settings functions
+        function exportData() {
+            showNotification('Экспорт данных в разработке');
+        }
+
+        function clearHistory() {
+            if (confirm('Очистить историю просмотров?')) {
+                showNotification('История очищена');
+            }
+        }
+
+        function deleteAccount() {
+            if (confirm('Вы уверены, что хотите удалить аккаунт? Это действие нельзя отменить.')) {
+                showNotification('Удаление аккаунта в разработке');
+            }
+        }
+
+        function checkForUpdates() {
+            showNotification('Проверка обновлений...');
+            setTimeout(() => showNotification('У вас установлена последняя версия'), 1000);
+        }
+
+        // Initialize everything when DOM is loaded
+        document.addEventListener('DOMContentLoaded', function() {
+            // Hide splash screen
+            setTimeout(() => {
+                document.getElementById('splashScreen').style.opacity = '0';
+                document.getElementById('splashScreen').style.visibility = 'hidden';
+            }, 2000);
+            
+            // Initialize components
+            initTelegramApp();
+            initMap();
+            setupDistrictFilter();
+            setupBottomSheet();
+            setupBusinessPanel();
+            setupProfilePanel();
+            setupSettingsPanel();
+            setupPWA();
+            
+            // Load saved theme
+            const savedTheme = localStorage.getItem('theme');
+            if (savedTheme) {
+                document.body.setAttribute('data-theme', savedTheme);
+                document.querySelector(`[data-theme="${savedTheme}"]`).classList.add('active');
+            }
+        });
+
+        // Online/offline detection
+        window.addEventListener('online', () => {
+            document.getElementById('offlineIndicator').classList.remove('show');
+            showNotification('Соединение восстановлено', 'success');
+        });
+
+        window.addEventListener('offline', () => {
+            document.getElementById('offlineIndicator').classList.add('show');
+        });
+    </script>
+</body>
+                      </html>
