@@ -1,0 +1,85 @@
+<template>
+  <div class="business-panel">
+    <div class="business-header">
+      <button class="back-btn" @click="closePanel">
+        <i class="fas fa-arrow-left"></i>
+      </button>
+      <h2>Бизнес-панель</h2>
+    </div>
+    <div class="business-content">
+      <div class="business-nav">
+        <button class="business-nav-btn active">Создать объявление</button>
+        <button class="business-nav-btn">Мои объявления</button>
+        <button class="business-nav-btn">Аналитика</button>
+        <button class="business-nav-btn">Верификация</button>
+      </div>
+      <div class="business-section">
+        <p>Выберите раздел для работы с бизнес-аккаунтом</p>
+      </div>
+    </div>
+  </div>
+</template>
+
+<script setup>
+import { useAppStore } from '../../stores/app.store'
+
+const appStore = useAppStore()
+
+const closePanel = () => {
+  appStore.setActivePanel(null)
+}
+</script>
+
+<style scoped>
+.business-panel {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--surface-bg);
+  z-index: 1000;
+}
+
+.business-header {
+  background: var(--card-bg);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.back-btn {
+  background: var(--surface-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.business-nav {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+
+.business-nav-btn {
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 12px;
+  text-align: center;
+  cursor: pointer;
+}
+
+.business-nav-btn.active {
+  background: var(--accent-blue);
+  color: white;
+}
+</style>
