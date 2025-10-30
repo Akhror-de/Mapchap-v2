@@ -1,0 +1,8 @@
+import { defineStore } from 'pinia'
+
+export const useMapStore = defineStore('map', {
+  state: () => ({
+    map: null,
+    userLocation: null
+  })
+})
