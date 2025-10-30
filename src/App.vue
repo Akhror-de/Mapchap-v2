@@ -1,16 +1,20 @@
 <template>
-  <div class="app">
-    <h1>MapChap App</h1>
-    <p>Структура создается...</p>
+  <div class="app-container" :data-theme="appStore.theme">
+    <AppHeader />
+    <MapContainer />
+    <BottomSheet />
   </div>
 </template>
 
 <script setup>
+import { useAppStore } from './stores/app.store'
+import AppHeader from './components/common/AppHeader.vue'
+import MapContainer from './components/map/MapContainer.vue'
+import BottomSheet from './components/common/BottomSheet.vue'
+
+const appStore = useAppStore()
 </script>
 
 <style>
-.app {
-  text-align: center;
-  padding: 20px;
-}
+/* Базовые стили уже подключены в main.js */
 </style>
