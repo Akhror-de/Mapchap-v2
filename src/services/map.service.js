@@ -5,28 +5,25 @@ export class MapService {
     this.map = null
     this.markers = []
     this.isYmapsLoaded = false
-    this.ymaps = null
   }
 
   async loadYmaps() {
     return new Promise((resolve, reject) => {
       if (window.ymaps) {
-        this.ymaps = window.ymaps
         this.isYmapsLoaded = true
-        resolve(window.ymaps)
+        window.ymaps.ready(resolve)
         return
       }
 
       const script = document.createElement('script')
       script.src = `https://api-maps.yandex.ru/2.1/?apikey=${CONFIG.YANDEX_MAP_KEY}&lang=ru_RU`
       script.onload = () => {
-        this.ymaps = window.ymaps
-        this.ymaps.ready(() => {
+        window.ymaps.ready(() => {
           this.isYmapsLoaded = true
-          resolve(this.ymaps)
+          resolve()
         })
       }
-      script.onerror = reject
+      script.onerror = () => reject(new Error('Failed to load Yandex Maps'))
       document.head.appendChild(script)
     })
   }
@@ -37,78 +34,61 @@ export class MapService {
         await this.loadYmaps()
       }
 
-      this.map = new this.ymaps.Map(container, {
+      this.map = new window.ymaps.Map(container, {
         center: CONFIG.DEFAULT_MAP_CENTER,
         zoom: CONFIG.DEFAULT_ZOOM,
-        controls: [] // Убираем стандартные контролы
+        controls: []
       }, {
         suppressMapOpenBlock: true,
         suppressObsoleteBrowserNotifier: true
       })
 
-      // Скрываем ненужные элементы Яндекс.Карт
       this.hideYmapsElements()
-
-      // Добавляем обработчики событий
       this.setupMapEvents()
 
+      console.log('Yandex Map initialized successfully')
       return this.map
+
     } catch (error) {
-      console.error('Failed to initialize map:', error)
+      console.error('Map initialization failed:', error)
       throw error
     }
   }
 
   hideYmapsElements() {
-    // Скрываем копирайты и другие элементы
-    const styles = `
+    const style = document.createElement('style')
+    style.textContent = `
       .ymaps-2-1-79-copyright,
       .ymaps-2-1-79-copyright__wrap,
       .ymaps-2-1-79-copyrights-pane,
       .ymaps-2-1-79-controls__control,
       .ymaps-2-1-79-controls__toolbar,
-      .ymaps-2-1-79-controls__toolbar_left,
-      .ymaps-2-1-79-controls__toolbar_right,
       .ymaps-2-1-79-search,
-      .ymaps-2-1-79-search__suggest,
-      .ymaps-2-1-79-search__suggest-item,
-      .ymaps-2-1-79-search__suggest-item-text {
+      .ymaps-2-1-79-search__suggest {
         display: none !important;
       }
     `
-    const styleSheet = document.createElement('style')
-    styleSheet.textContent = styles
-    document.head.appendChild(styleSheet)
+    document.head.appendChild(style)
   }
 
   setupMapEvents() {
-    // Обработчик клика по карте
     this.map.events.add('click', (e) => {
       const coords = e.get('coords')
       console.log('Map clicked at:', coords)
-      // Можно добавить создание метки или другие действия
-    })
-
-    // Отслеживание изменения границ карты
-    this.map.events.add('boundschange', (e) => {
-      // Можно использовать для подгрузки предложений в видимой области
-      console.log('Map bounds changed')
     })
   }
 
   addMarker(coordinates, data) {
     if (!this.map) return null
 
-    const marker = new this.ymaps.Placemark(coordinates, {
+    const marker = new window.ymaps.Placemark(coordinates, {
       hintContent: data.title,
       balloonContent: this.createBalloonContent(data)
     }, {
       preset: this.getPresetByCategory(data.category),
-      balloonCloseButton: true,
-      hideIconOnBalloonOpen: false
+      balloonCloseButton: true
     })
 
-    // Обработчик клика по метке
     marker.events.add('click', () => {
       this.openBalloon(marker, data)
     })
@@ -128,11 +108,8 @@ export class MapService {
         <p class="balloon-address">📍 ${data.address}</p>
         <p class="balloon-time">🕒 ${data.time}</p>
         <div class="balloon-actions">
-          <button class="balloon-btn favorite-btn" onclick="window.mapService.toggleFavorite(${data.id})">
+          <button class="balloon-btn favorite-btn" onclick="window.toggleFavorite(${data.id})">
             ❤️ В избранное
-          </button>
-          <button class="balloon-btn route-btn" onclick="window.mapService.buildRoute([${data.coordinates}])">
-            🚗 Построить маршрут
           </button>
         </div>
       </div>
@@ -144,10 +121,7 @@ export class MapService {
       cafe: 'islands#blueFoodIcon',
       shop: 'islands#blueShoppingIcon',
       services: 'islands#blueServiceIcon',
-      education: 'islands#blueEducationIcon',
-      health: 'islands#blueHealthIcon',
       beauty: 'islands#blueBeautyIcon',
-      entertainment: 'islands#blueEntertainmentIcon',
       other: 'islands#blueStarIcon'
     }
     return presets[category] || 'islands#blueStarIcon'
@@ -155,12 +129,7 @@ export class MapService {
 
   openBalloon(marker, data) {
     marker.balloon.open()
-    
-    // Центрируем карту на метке с небольшим смещением для балуна
-    this.map.panTo(data.coordinates, {
-      delay: 300,
-      duration: 1000
-    })
+    this.map.panTo(data.coordinates, { duration: 1000 })
   }
 
   clearMarkers() {
@@ -172,54 +141,33 @@ export class MapService {
 
   setCenter(coordinates, zoom = null) {
     if (!this.map) return
-
-    if (zoom) {
-      this.map.setCenter(coordinates, zoom)
-    } else {
-      this.map.setCenter(coordinates)
-    }
+    zoom ? this.map.setCenter(coordinates, zoom) : this.map.setCenter(coordinates)
   }
 
   setZoom(zoom) {
-    if (this.map) {
-      this.map.setZoom(zoom)
-    }
+    if (this.map) this.map.setZoom(zoom)
   }
 
   getUserLocation() {
     return new Promise((resolve, reject) => {
-      if (!this.ymaps) {
-        reject(new Error('Ymaps not loaded'))
+      if (!navigator.geolocation) {
+        reject(new Error('Geolocation not supported'))
         return
       }
 
-      this.ymaps.geolocation.get({
-        provider: 'browser',
-        mapStateAutoApply: true
-      }).then((result) => {
-        resolve(result.geoObjects.position)
-      }).catch((error) => {
-        reject(error)
-      })
+      navigator.geolocation.getCurrentPosition(
+        (position) => {
+          resolve([position.coords.latitude, position.coords.longitude])
+        },
+        (error) => {
+          reject(error)
+        },
+        {
+          enableHighAccuracy: true,
+          timeout: 10000
+        }
+      )
     })
-  }
-
-  // Построение маршрута
-  buildRoute(targetCoordinates) {
-    if (!this.ymaps || !this.map) return
-
-    this.ymaps.route([
-      this.map.getCenter(),
-      targetCoordinates
-    ]).then((route) => {
-      this.map.geoObjects.add(route)
-    })
-  }
-
-  // Методы для работы с избранным (заглушки)
-  toggleFavorite(offerId) {
-    console.log('Toggle favorite:', offerId)
-    // Реализуется через store
   }
 
   destroy() {
@@ -231,7 +179,11 @@ export class MapService {
   }
 }
 
-// Создаем глобальный экземпляр
+// Глобальный экземпляр
 export const mapService = new MapService()
-// Делаем доступным глобально для обработчиков в балунах
-window.mapService = mapService
+
+// Глобальные функции для балунов
+window.toggleFavorite = (offerId) => {
+  console.log('Toggle favorite from balloon:', offerId)
+  // Будет подключено к store позже
+}
