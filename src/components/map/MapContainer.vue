@@ -2,27 +2,24 @@
   <div class="map-container">
     <div id="map" ref="mapElement" class="map"></div>
     
-    <MapPlaceholder v-if="!isMapReady" />
+    <MapPlaceholder v-if="!isMapReady && !mapError" />
     <MapControls 
       @zoom-in="zoomIn"
       @zoom-out="zoomOut" 
       @locate="locateUser"
-      @refresh="refreshMap"
     />
     
     <div v-if="mapError" class="map-error">
       <i class="fas fa-exclamation-triangle"></i>
-      <p>Не удалось загрузить карту</p>
-      <button @click="initializeMap" class="retry-btn">Повторить</button>
+      <p>{{ mapError }}</p>
+      <button @click="initializeMap" class="retry-btn">Повторить попытку</button>
     </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useMapStore } from '../../stores/map.store'
 import { useAppStore } from '../../stores/app.store'
-import { useOffers } from '../../composables/useOffers'
 import { mapService } from '../../services/map.service'
 import MapPlaceholder from './MapPlaceholder.vue'
 import MapControls from './MapControls.vue'
@@ -31,78 +28,87 @@ const mapElement = ref(null)
 const isMapReady = ref(false)
 const mapError = ref(null)
 
-const mapStore = useMapStore()
 const appStore = useAppStore()
-const { offers, loadOffers } = useOffers()
+
+// Mock offers data
+const mockOffers = [
+  {
+    id: 1,
+    title: "Кофейня Central",
+    discount: 30,
+    address: "ул. Примерная, 15",
+    description: "Скидка на все виды кофе при заказе через приложение",
+    district: "center",
+    coordinates: [55.7558, 37.6176],
+    time: "до 18:00",
+    category: "cafe"
+  },
+  {
+    id: 2,
+    title: "Магазин Fresh",
+    discount: 20,
+    address: "пр. Главный, 42",
+    description: "Скидка на овощи и фрукты",
+    district: "north", 
+    coordinates: [55.7658, 37.6276],
+    time: "ежедневно",
+    category: "shop"
+  },
+  {
+    id: 3,
+    title: "Салон красоты Elite",
+    discount: 25,
+    address: "ул. Цветочная, 8", 
+    description: "Скидка на стрижку и укладку",
+    district: "south",
+    coordinates: [55.7458, 37.6076],
+    time: "по будням",
+    category: "beauty"
+  }
+]
 
 const initializeMap = async () => {
   try {
-    appStore.setLoading(true, 'Загрузка карты...')
+    appStore.setLoading(true, 'Инициализация карты...')
     mapError.value = null
 
-    const map = await mapService.initializeMap(mapElement.value)
-    mapStore.setMap(map)
+    await mapService.initializeMap(mapElement.value)
     
-    // Загружаем предложения и добавляем метки
-    await loadOffers()
-    addOffersToMap()
+    // Добавляем тестовые метки
+    mockOffers.forEach(offer => {
+      mapService.addMarker(offer.coordinates, offer)
+    })
     
     isMapReady.value = true
+    appStore.showNotification({ message: 'Карта загружена', type: 'success' })
+    
   } catch (error) {
-    console.error('Map initialization error:', error)
-    mapError.value = 'Ошибка загрузки карты. Проверьте подключение к интернету.'
+    console.error('Map error:', error)
+    mapError.value = 'Ошибка загрузки карты. Проверьте интернет-соединение и API ключ.'
+    appStore.showNotification({ message: 'Ошибка загрузки карты', type: 'error' })
   } finally {
     appStore.setLoading(false)
   }
 }
 
-const addOffersToMap = () => {
-  if (!offers.value.length) return
-
-  offers.value.forEach(offer => {
-    mapService.addMarker(offer.coordinates, offer)
-  })
-}
-
-const zoomIn = () => {
-  if (mapStore.map) {
-    const currentZoom = mapStore.map.getZoom()
-    mapStore.map.setZoom(currentZoom + 1)
-  }
-}
-
-const zoomOut = () => {
-  if (mapStore.map) {
-    const currentZoom = mapStore.map.getZoom()
-    mapStore.map.setZoom(currentZoom - 1)
-  }
-}
+const zoomIn = () => mapService.setZoom(mapService.map.getZoom() + 1)
+const zoomOut = () => mapService.setZoom(mapService.map.getZoom() - 1)
 
 const locateUser = async () => {
   try {
     appStore.setLoading(true, 'Определение местоположения...')
-    
     const location = await mapService.getUserLocation()
-    mapStore.setUserLocation(location)
     mapService.setCenter(location, 15)
-    
-    appStore.showNotification({
-      message: 'Местоположение определено',
-      type: 'success'
-    })
+    appStore.showNotification({ message: 'Местоположение определено', type: 'success' })
   } catch (error) {
     console.error('Location error:', error)
-    appStore.showNotification({
-      message: 'Не удалось определить местоположение',
-      type: 'error'
+    appStore.showNotification({ 
+      message: 'Не удалось определить местоположение', 
+      type: 'error' 
     })
   } finally {
     appStore.setLoading(false)
   }
-}
-
-const refreshMap = () => {
-  initializeMap()
 }
 
 onMounted(() => {
@@ -113,50 +119,3 @@ onUnmounted(() => {
   mapService.destroy()
 })
 </script>
-
-<style scoped>
-.map-container {
-  flex: 1;
-  position: relative;
-  background: var(--surface-bg);
-  width: 100%;
-  height: 100%;
-  overflow: hidden;
-}
-
-.map {
-  width: 100%;
-  height: 100%;
-  position: absolute;
-  top: 0;
-  left: 0;
-}
-
-.map-error {
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  text-align: center;
-  color: var(--error);
-  background: var(--card-bg);
-  padding: 20px;
-  border-radius: 12px;
-  border: 1px solid var(--error);
-}
-
-.map-error i {
-  font-size: 48px;
-  margin-bottom: 12px;
-}
-
-.retry-btn {
-  background: var(--accent-blue);
-  color: white;
-  border: none;
-  padding: 10px 20px;
-  border-radius: 8px;
-  margin-top: 12px;
-  cursor: pointer;
-}
-</style>
