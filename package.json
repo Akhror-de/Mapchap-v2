@@ -1,18 +1,21 @@
+cat > package.json << 'EOF'
 {
   "name": "mapchap-app",
-  "type": "module",
+  "private": true,
   "version": "1.0.0",
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview"
   },
   "dependencies": {
-    "vue": "^3.3.0",
-    "pinia": "^2.1.0"
+    "pinia": "^2.1.7",
+    "vue": "^3.4.15"
   },
   "devDependencies": {
-    "vite": "^4.4.0",
-    "@vitejs/plugin-vue": "^4.3.0"
+    "@vitejs/plugin-vue": "^5.0.4",
+    "vite": "^5.0.10"
   }
 }
+EOF
