@@ -1,3 +1,4 @@
+
 cat > src/styles/variables.css << 'EOF'
 :root {
   /* Light theme */
