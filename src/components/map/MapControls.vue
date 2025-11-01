@@ -1,65 +1,82 @@
 <template>
-  <div class="controls-container">
-    <button class="control-btn" @click="$emit('zoom-in')" title="Увеличить">
-      <i class="fas fa-plus"></i>
+  <div class="map-controls">
+    <button class="control-btn" @click="locateMe" title="Мое местоположение">
+      📍
     </button>
-    <button class="control-btn" @click="$emit('zoom-out')" title="Уменьшить">
-      <i class="fas fa-minus"></i>
-    </button>
-    <button class="control-btn location-btn" @click="$emit('locate')" title="Мое местоположение">
-      <i class="fas fa-location-crosshairs"></i>
-    </button>
-    <button class="control-btn refresh-btn" @click="$emit('refresh')" title="Обновить карту">
-      <i class="fas fa-refresh"></i>
-    </button>
+    <div class="zoom-controls">
+      <button class="control-btn" @click="zoomIn" title="Увеличить">
+        ➕
+      </button>
+      <button class="control-btn" @click="zoomOut" title="Уменьшить">
+        ➖
+      </button>
+    </div>
   </div>
 </template>
 
 <script setup>
-defineEmits(['zoom-in', 'zoom-out', 'locate', 'refresh'])
+import { useMapStore } from '@/stores/map'
+
+const mapStore = useMapStore()
+
+const locateMe = () => {
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        const { latitude, longitude } = position.coords
+        mapStore.setCenter([latitude, longitude])
+        mapStore.setZoom(15)
+      },
+      (error) => {
+        console.error('Ошибка геолокации:', error)
+      }
+    )
+  }
+}
+
+const zoomIn = () => {
+  mapStore.setZoom(mapStore.zoom + 1)
+}
+
+const zoomOut = () => {
+  mapStore.setZoom(mapStore.zoom - 1)
+}
 </script>
 
 <style scoped>
-.controls-container {
+.map-controls {
   position: absolute;
-  top: 12px;
-  right: 12px;
+  top: 20px;
+  right: 20px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 10px;
   z-index: 1000;
-  background: rgba(26, 26, 26, 0.9);
-  padding: 8px;
-  border-radius: 12px;
-  backdrop-filter: blur(10px);
-  border: 1px solid var(--border-color);
 }
 
 .control-btn {
-  width: 40px;
-  height: 40px;
-  background: var(--surface-bg);
-  border: 1px solid var(--border-color);
+  width: 44px;
+  height: 44px;
+  border: none;
   border-radius: 8px;
-  color: var(--text-primary);
-  font-size: 14px;
+  background: var(--bg-primary);
+  box-shadow: var(--shadow);
   cursor: pointer;
+  font-size: 1.2rem;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.3s ease;
+  transition: all 0.2s ease;
 }
 
 .control-btn:hover {
-  background: var(--accent-blue);
-  transform: translateY(-1px);
+  background: var(--bg-hover);
+  transform: scale(1.05);
 }
 
-.location-btn:hover {
-  background: var(--accent-green);
-}
-
-.refresh-btn:hover {
-  background: var(--accent-orange);
+.zoom-controls {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
 }
 </style>
