@@ -1,3 +1,5 @@
+# Создаем style.css в папке src
+cat > src/style.css << 'EOF'
 /* ===== CSS ПЕРЕМЕННЫЕ ===== */
 :root {
   /* Light theme */
@@ -51,8 +53,6 @@ body {
 }
 
 /* ===== КОМПОНЕНТЫ ===== */
-
-/* Кнопки */
 .btn {
   padding: 0.5rem 1rem;
   border: none;
@@ -88,7 +88,6 @@ body {
   background-color: var(--bg-hover);
 }
 
-/* Карточки */
 .card {
   background: var(--bg-primary);
   border: 1px solid var(--border-color);
@@ -97,7 +96,6 @@ body {
   box-shadow: var(--shadow);
 }
 
-/* Заголовок приложения */
 .app-header {
   background: var(--bg-primary);
   border-bottom: 1px solid var(--border-color);
@@ -121,7 +119,6 @@ body {
   color: var(--text-primary);
 }
 
-/* Основной контент */
 .app-main {
   flex: 1;
   padding: 2rem;
@@ -152,7 +149,6 @@ body {
   margin-top: 2rem;
 }
 
-/* Утилиты */
 .loading-spinner {
   width: 40px;
   height: 40px;
@@ -174,7 +170,6 @@ body {
   color: var(--text-secondary);
 }
 
-/* Scrollbar */
 ::-webkit-scrollbar {
   width: 8px;
 }
@@ -192,7 +187,6 @@ body {
   background: var(--text-secondary);
 }
 
-/* Адаптивность */
 @media (max-width: 768px) {
   .app-main {
     padding: 1rem;
@@ -206,3 +200,4 @@ body {
     grid-template-columns: 1fr;
   }
 }
+EOF
