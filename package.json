@@ -1,5 +1,4 @@
-cat > package.json << 'EOF'
-{
+echo '{
   "name": "mapchap-app",
   "private": true,
   "version": "1.0.0",
@@ -17,5 +16,4 @@ cat > package.json << 'EOF'
     "@vitejs/plugin-vue": "^5.0.4",
     "vite": "^5.0.10"
   }
-}
-EOF
+}' > package.json
