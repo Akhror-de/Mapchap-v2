@@ -1,8 +1,5 @@
-# Создаем style.css в папке src
-cat > src/style.css << 'EOF'
-/* ===== CSS ПЕРЕМЕННЫЕ ===== */
+/* ===== CSS VARIABLES ===== */
 :root {
-  /* Light theme */
   --bg-primary: #ffffff;
   --bg-secondary: #f8f9fa;
   --bg-hover: #e9ecef;
@@ -31,7 +28,6 @@ cat > src/style.css << 'EOF'
   --shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-/* ===== БАЗОВЫЕ СТИЛИ ===== */
 * {
   margin: 0;
   padding: 0;
@@ -52,7 +48,6 @@ body {
   flex-direction: column;
 }
 
-/* ===== КОМПОНЕНТЫ ===== */
 .btn {
   padding: 0.5rem 1rem;
   border: none;
@@ -200,4 +195,3 @@ body {
     grid-template-columns: 1fr;
   }
 }
-EOF
