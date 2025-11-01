@@ -3,52 +3,80 @@ import { ref } from 'vue'
 
 export const useMapStore = defineStore('map', () => {
   const map = ref(null)
-  const userLocation = ref(null)
-  const currentZoom = ref(12)
-  const currentCenter = ref([55.7558, 37.6173])
-  const isMapReady = ref(false)
+  const center = ref([55.751244, 37.618423]) // Москва
+  const zoom = ref(10)
+  const isLoaded = ref(false)
 
-  const setMap = (mapInstance) => {
-    map.value = mapInstance
-    isMapReady.value = true
-    
-    // Следим за изменением зума и центра
-    mapInstance.events.add('boundschange', () => {
-      currentZoom.value = mapInstance.getZoom()
-      currentCenter.value = mapInstance.getCenter()
-    })
-  }
+  const initMap = async (container) => {
+    try {
+      // Загружаем Яндекс.Карты
+      await loadYmaps()
+      
+      // Создаем карту
+      map.value = new ymaps.Map(container, {
+        center: center.value,
+        zoom: zoom.value,
+        controls: []
+      })
 
-  const setUserLocation = (location) => {
-    userLocation.value = location
-  }
+      // Добавляем базовые элементы управления
+      map.value.controls.add('zoomControl')
+      map.value.controls.add('geolocationControl')
+      
+      // Подписываемся на события
+      map.value.events.add('boundschange', (e) => {
+        center.value = e.get('newCenter')
+        zoom.value = e.get('newZoom')
+      })
 
-  const setCenter = (coordinates, zoom = null) => {
-    if (map.value) {
-      if (zoom) {
-        map.value.setCenter(coordinates, zoom)
-      } else {
-        map.value.setCenter(coordinates)
-      }
-      currentCenter.value = coordinates
+      isLoaded.value = true
+      
+    } catch (error) {
+      console.error('Ошибка инициализации карты:', error)
     }
   }
 
-  const setZoom = (zoom) => {
+  const loadYmaps = () => {
+    return new Promise((resolve, reject) => {
+      if (window.ymaps) {
+        window.ymaps.ready(resolve)
+        return
+      }
+
+      const script = document.createElement('script')
+      script.src = `https://api-maps.yandex.ru/2.1/?apikey=07b74146-5f5a-46bf-a2b1-cf6d052a41bb&lang=ru_RU`
+      script.onload = () => window.ymaps.ready(resolve)
+      script.onerror = reject
+      document.head.appendChild(script)
+    })
+  }
+
+  const destroyMap = () => {
     if (map.value) {
-      map.value.setZoom(zoom)
-      currentZoom.value = zoom
+      map.value.destroy()
+      map.value = null
+    }
+  }
+
+  const setCenter = (coordinates) => {
+    if (map.value) {
+      map.value.setCenter(coordinates)
+    }
+  }
+
+  const setZoom = (newZoom) => {
+    if (map.value) {
+      map.value.setZoom(newZoom)
     }
   }
 
   return {
     map,
-    userLocation,
-    currentZoom,
-    currentCenter,
-    isMapReady,
-    setMap,
-    setUserLocation,
+    center,
+    zoom,
+    isLoaded,
+    initMap,
+    destroyMap,
     setCenter,
     setZoom
   }
