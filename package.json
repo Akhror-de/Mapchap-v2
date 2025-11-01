@@ -1,4 +1,4 @@
-echo '{
+{
   "name": "mapchap-app",
   "private": true,
   "version": "1.0.0",
@@ -16,4 +16,4 @@ echo '{
     "@vitejs/plugin-vue": "^5.0.4",
     "vite": "^5.0.10"
   }
-}' > package.json
+}
