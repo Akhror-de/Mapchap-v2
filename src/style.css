@@ -11,13 +11,12 @@
   min-height: 400px;
 }
 
-/* Скрываем элементы Яндекс.Карт */
-[class*="copyrights-pane"] {
+/* Полностью скрываем элементы Яндекс.Карт */
+[class*="copyrights-pane"],
+[class*="controls-pane"],
+[class*="traffic-pane"],
+[class*="search-pane"] {
   display: none !important;
-}
-
-[class*="ground-pane"] {
-  filter: grayscale(0.1);
 }
 
 /* Стили для индикатора загрузки */
@@ -39,4 +38,22 @@
 .map-loading p {
   margin-top: 1rem;
   font-size: 1rem;
+}
+
+/* Улучшаем внешний вид элементов управления */
+.control-btn {
+  border: 1px solid var(--border-color) !important;
+}
+
+.control-btn:hover {
+  border-color: var(--primary-color) !important;
+}
+
+/* Анимации для плавности */
+.map-container {
+  transition: opacity 0.3s ease;
+}
+
+.loading-spinner {
+  border-width: 3px;
 }
