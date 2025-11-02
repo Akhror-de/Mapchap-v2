@@ -7,6 +7,7 @@
       <button class="control-btn" @click="zoomIn" title="Увеличить">
         ➕
       </button>
+      <div class="zoom-level">{{ currentZoom }}x</div>
       <button class="control-btn" @click="zoomOut" title="Уменьшить">
         ➖
       </button>
@@ -14,13 +15,34 @@
     <button class="control-btn" @click="addTestMarker" title="Добавить метку">
       📌
     </button>
+    <button class="control-btn" @click="clearMarkers" title="Очистить метки">
+      🗑️
+    </button>
   </div>
 </template>
 
 <script setup>
+import { ref, onMounted, onUnmounted } from 'vue'
 import { useMapStore } from '../../stores/map.store.js'
 
 const mapStore = useMapStore()
+const currentZoom = ref(10)
+let updateInterval
+
+onMounted(() => {
+  // Обновляем отображение зума каждые 500мс
+  updateInterval = setInterval(() => {
+    if (mapStore.map) {
+      currentZoom.value = mapStore.getZoom()
+    }
+  }, 500)
+})
+
+onUnmounted(() => {
+  if (updateInterval) {
+    clearInterval(updateInterval)
+  }
+})
 
 const locateMe = () => {
   if (navigator.geolocation) {
@@ -47,20 +69,29 @@ const locateMe = () => {
 }
 
 const zoomIn = () => {
-  mapStore.setZoom(mapStore.zoom + 1)
+  const current = mapStore.getZoom()
+  if (current < 19) { // Максимальный зум Яндекс.Карт
+    mapStore.setZoom(current + 1)
+  }
 }
 
 const zoomOut = () => {
-  mapStore.setZoom(mapStore.zoom - 1)
+  const current = mapStore.getZoom()
+  if (current > 1) { // Минимальный зум Яндекс.Карт
+    mapStore.setZoom(current - 1)
+  }
 }
 
 const addTestMarker = () => {
-  // Добавляем тестовую метку в центре карты
-  const [lat, lon] = mapStore.center
-  mapStore.addPlacemark([lat, lon], {
+  const center = mapStore.getCenter()
+  mapStore.addPlacemark(center, {
     balloonContent: 'Тестовая метка',
     iconCaption: 'Тест'
   })
+}
+
+const clearMarkers = () => {
+  mapStore.removeAllPlacemarks()
 }
 </script>
 
@@ -95,9 +126,20 @@ const addTestMarker = () => {
   transform: scale(1.05);
 }
 
+.control-btn:active {
+  transform: scale(0.95);
+}
+
 .zoom-controls {
   display: flex;
   flex-direction: column;
   gap: 5px;
+  align-items: center;
+}
+
+.zoom-level {
+  font-size: 0.75rem;
+  color: var(--text-secondary);
+  font-weight: 600;
 }
 </style>
