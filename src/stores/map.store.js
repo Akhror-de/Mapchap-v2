@@ -12,16 +12,22 @@ export const useMapStore = defineStore('map', () => {
       // Загружаем Яндекс.Карты
       await loadYmaps()
       
-      // Создаем карту
+      // Создаем карту БЕЗ элементов управления
       map.value = new ymaps.Map(container, {
         center: center.value,
         zoom: zoom.value,
-        controls: []
+        // Отключаем ВСЕ стандартные элементы управления
+        controls: [],
+        // Дополнительные настройки для чистого вида
+        suppressMapOpenBlock: true, // Убираем кнопку полноэкранного режима
+        suppressObsoleteBrowserNotifier: true, // Убираем уведомления
       })
 
-      // Добавляем базовые элементы управления
-      map.value.controls.add('zoomControl')
-      map.value.controls.add('geolocationControl')
+      // Отключаем стандартные поведения если нужно
+      // map.value.behaviors.disable('scrollZoom')
+      // map.value.behaviors.disable('dblClickZoom')
+      // map.value.behaviors.disable('rightMouseButtonMagnifier')
+      // map.value.behaviors.disable('leftMouseButtonMagnifier')
       
       // Подписываемся на события
       map.value.events.add('boundschange', (e) => {
@@ -30,6 +36,7 @@ export const useMapStore = defineStore('map', () => {
       })
 
       isLoaded.value = true
+      console.log('Карта Яндекс инициализирована (чистая версия)')
       
     } catch (error) {
       console.error('Ошибка инициализации карты:', error)
@@ -70,6 +77,16 @@ export const useMapStore = defineStore('map', () => {
     }
   }
 
+  const addPlacemark = (coordinates, properties = {}) => {
+    if (map.value) {
+      const placemark = new ymaps.Placemark(coordinates, properties, {
+        preset: 'islands#blueIcon'
+      })
+      map.value.geoObjects.add(placemark)
+      return placemark
+    }
+  }
+
   return {
     map,
     center,
@@ -78,6 +95,7 @@ export const useMapStore = defineStore('map', () => {
     initMap,
     destroyMap,
     setCenter,
-    setZoom
+    setZoom,
+    addPlacemark
   }
 })
