@@ -29,9 +29,9 @@
 
 <script setup>
 import { ref } from 'vue'
-import MapContainer from '@/components/map/MapContainer.vue'
-import MapControls from '@/components/map/MapControls.vue'
-import BottomSheet from '@/components/common/BottomSheet.vue'
+import MapContainer from './components/map/MapContainer.vue'
+import MapControls from './components/map/MapControls.vue'
+import BottomSheet from './components/common/BottomSheet.vue'
 
 const theme = ref('light')
 
@@ -40,7 +40,6 @@ const toggleTheme = () => {
 }
 
 const showProfile = () => {
-  // Будет реализовано позже
   console.log('Открыть профиль')
 }
 </script>
