@@ -17,8 +17,24 @@ const mapRef = ref(null)
 const isMapLoaded = ref(false)
 
 onMounted(async () => {
-  await mapStore.initMap(mapRef.value)
-  isMapLoaded.value = true
+  try {
+    await mapStore.initMap(mapRef.value)
+    isMapLoaded.value = true
+    
+    // Добавляем обработчики событий карты
+    if (mapStore.map) {
+      mapStore.map.events.add('click', (e) => {
+        const coords = e.get('coords')
+        mapStore.addPlacemark(coords, {
+          balloonContent: `Координаты: ${coords[0].toFixed(6)}, ${coords[1].toFixed(6)}`,
+          iconCaption: 'Новая метка'
+        })
+      })
+    }
+  } catch (error) {
+    console.error('Ошибка загрузки карты:', error)
+    isMapLoaded.value = false
+  }
 })
 
 onUnmounted(() => {
@@ -36,6 +52,7 @@ onUnmounted(() => {
 .map {
   width: 100%;
   height: 100%;
+  min-height: 400px;
 }
 
 .map-loading {
@@ -50,5 +67,6 @@ onUnmounted(() => {
   align-items: center;
   justify-content: center;
   color: var(--text-secondary);
+  z-index: 999;
 }
 </style>
