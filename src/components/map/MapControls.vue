@@ -11,6 +11,9 @@
         ➖
       </button>
     </div>
+    <button class="control-btn" @click="addTestMarker" title="Добавить метку">
+      📌
+    </button>
   </div>
 </template>
 
@@ -26,11 +29,20 @@ const locateMe = () => {
         const { latitude, longitude } = position.coords
         mapStore.setCenter([latitude, longitude])
         mapStore.setZoom(15)
+        
+        // Добавляем метку на текущее местоположение
+        mapStore.addPlacemark([latitude, longitude], {
+          balloonContent: 'Ваше местоположение',
+          iconCaption: 'Вы здесь'
+        })
       },
       (error) => {
         console.error('Ошибка геолокации:', error)
+        alert('Не удалось определить ваше местоположение')
       }
     )
+  } else {
+    alert('Геолокация не поддерживается вашим браузером')
   }
 }
 
@@ -40,6 +52,15 @@ const zoomIn = () => {
 
 const zoomOut = () => {
   mapStore.setZoom(mapStore.zoom - 1)
+}
+
+const addTestMarker = () => {
+  // Добавляем тестовую метку в центре карты
+  const [lat, lon] = mapStore.center
+  mapStore.addPlacemark([lat, lon], {
+    balloonContent: 'Тестовая метка',
+    iconCaption: 'Тест'
+  })
 }
 </script>
 
