@@ -15,7 +15,7 @@
 </template>
 
 <script setup>
-import { useMapStore } from '@/stores/map.store'
+import { useMapStore } from '../../stores/map.store.js'
 
 const mapStore = useMapStore()
 
