@@ -10,7 +10,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted } from 'vue'
-import { useMapStore } from '@/stores/map.store'
+import { useMapStore } from '../../stores/map.store.js'
 
 const mapStore = useMapStore()
 const mapRef = ref(null)
