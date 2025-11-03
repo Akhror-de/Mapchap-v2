@@ -1,4 +1,4 @@
-// src/stores/map.store.js - ПОЛНОСТЬЮ ОБНОВИТЕ
+// src/stores/map.store.js - ИСПРАВЛЕННАЯ ВЕРСИЯ
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
@@ -15,7 +15,6 @@ export const useMapStore = defineStore('map', () => {
       
       await loadYmaps()
       
-      // Проверяем, что контейнер существует
       if (!container) {
         throw new Error('Map container not found')
       }
@@ -34,7 +33,7 @@ export const useMapStore = defineStore('map', () => {
       map.value.behaviors.disable('rightMouseButtonMagnifier')
       map.value.behaviors.disable('multiTouch')
 
-      console.log('✅ Яндекс.Карты инициализированы (чистая версия)')
+      console.log('✅ Яндекс.Карты инициализированы')
       isLoaded.value = true
       isLoading.value = false
       
@@ -48,7 +47,7 @@ export const useMapStore = defineStore('map', () => {
 
   const loadYmaps = () => {
     return new Promise((resolve, reject) => {
-      // Проверяем наличие API-ключа
+      // Используем API ключ из переменной окружения Vite
       const apiKey = import.meta.env.VITE_YANDEX_MAPS_API_KEY
       
       if (!apiKey || apiKey === 'your_yandex_maps_api_key_here') {
@@ -81,7 +80,6 @@ export const useMapStore = defineStore('map', () => {
       map.value.destroy()
       map.value = null
       isLoaded.value = false
-      console.log('🗑️ Карта уничтожена')
     }
   }
 
@@ -122,7 +120,6 @@ export const useMapStore = defineStore('map', () => {
     }
   }
 
-  // Новый метод для обработки ошибок
   const clearError = () => {
     error.value = null
   }
