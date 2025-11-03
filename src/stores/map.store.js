@@ -1,23 +1,29 @@
+// src/stores/map.store.js - ПОЛНОСТЬЮ ОБНОВИТЕ
 import { defineStore } from 'pinia'
 import { ref } from 'vue'
 
 export const useMapStore = defineStore('map', () => {
   const map = ref(null)
   const isLoaded = ref(false)
-  
-  // Убираем реактивные переменные для центра и зума
-  // чтобы избежать лишних перерисовок
+  const isLoading = ref(false)
+  const error = ref(null)
 
   const initMap = async (container) => {
     try {
-      // Загружаем Яндекс.Карты
+      isLoading.value = true
+      error.value = null
+      
       await loadYmaps()
       
-      // Создаем карту БЕЗ элементов управления Яндекс
+      // Проверяем, что контейнер существует
+      if (!container) {
+        throw new Error('Map container not found')
+      }
+      
       map.value = new ymaps.Map(container, {
-        center: [55.751244, 37.618423], // Москва
+        center: [55.751244, 37.618423],
         zoom: 10,
-        controls: [], // Полностью убираем элементы управления Яндекс
+        controls: [],
         suppressMapOpenBlock: true,
         suppressObsoleteBrowserNotifier: true,
       })
@@ -28,25 +34,44 @@ export const useMapStore = defineStore('map', () => {
       map.value.behaviors.disable('rightMouseButtonMagnifier')
       map.value.behaviors.disable('multiTouch')
 
-      console.log('Карта Яндекс инициализирована (чистая версия)')
+      console.log('✅ Яндекс.Карты инициализированы (чистая версия)')
       isLoaded.value = true
+      isLoading.value = false
       
-    } catch (error) {
-      console.error('Ошибка инициализации карты:', error)
+    } catch (err) {
+      console.error('❌ Ошибка инициализации карты:', err)
+      error.value = err.message
+      isLoading.value = false
+      isLoaded.value = false
     }
   }
 
   const loadYmaps = () => {
     return new Promise((resolve, reject) => {
+      // Проверяем наличие API-ключа
+      const apiKey = import.meta.env.VITE_YANDEX_MAPS_API_KEY
+      
+      if (!apiKey || apiKey === 'your_yandex_maps_api_key_here') {
+        reject(new Error('Yandex Maps API key is not configured. Please check your .env file'))
+        return
+      }
+
       if (window.ymaps) {
         window.ymaps.ready(resolve)
         return
       }
 
       const script = document.createElement('script')
-      script.src = `https://api-maps.yandex.ru/2.1/?apikey=07b74146-5f5a-46bf-a2b1-cf6d052a41bb&lang=ru_RU`
-      script.onload = () => window.ymaps.ready(resolve)
-      script.onerror = reject
+      script.src = `https://api-maps.yandex.ru/2.1/?apikey=${apiKey}&lang=ru_RU`
+      script.onload = () => {
+        console.log('✅ Яндекс.Карты API загружены')
+        window.ymaps.ready(resolve)
+      }
+      script.onerror = () => {
+        const error = new Error('Failed to load Yandex Maps API')
+        console.error('❌', error)
+        reject(error)
+      }
       document.head.appendChild(script)
     })
   }
@@ -55,6 +80,8 @@ export const useMapStore = defineStore('map', () => {
     if (map.value) {
       map.value.destroy()
       map.value = null
+      isLoaded.value = false
+      console.log('🗑️ Карта уничтожена')
     }
   }
 
@@ -66,7 +93,7 @@ export const useMapStore = defineStore('map', () => {
 
   const setZoom = (newZoom) => {
     if (map.value) {
-      map.value.setZoom(newZoom)
+      map.value.setZoom(Math.min(Math.max(newZoom, 1), 19))
     }
   }
 
@@ -78,10 +105,11 @@ export const useMapStore = defineStore('map', () => {
     return map.value ? map.value.getCenter() : [55.751244, 37.618423]
   }
 
-  const addPlacemark = (coordinates, properties = {}) => {
+  const addPlacemark = (coordinates, properties = {}, options = {}) => {
     if (map.value) {
       const placemark = new ymaps.Placemark(coordinates, properties, {
-        preset: 'islands#blueIcon'
+        preset: 'islands#blueIcon',
+        ...options
       })
       map.value.geoObjects.add(placemark)
       return placemark
@@ -94,9 +122,16 @@ export const useMapStore = defineStore('map', () => {
     }
   }
 
+  // Новый метод для обработки ошибок
+  const clearError = () => {
+    error.value = null
+  }
+
   return {
     map,
     isLoaded,
+    isLoading,
+    error,
     initMap,
     destroyMap,
     setCenter,
@@ -104,6 +139,7 @@ export const useMapStore = defineStore('map', () => {
     getZoom,
     getCenter,
     addPlacemark,
-    removeAllPlacemarks
+    removeAllPlacemarks,
+    clearError
   }
 })
