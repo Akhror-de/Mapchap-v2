@@ -1,44 +1,69 @@
 // src/utils/env.js
-export const env = {
-  // Яндекс.Карты
+class EnvironmentManager {
+  constructor() {
+    this._validateNodeVersion()
+    this._validateEnvironment()
+  }
+
+  _validateNodeVersion() {
+    const nodeVersion = process.version
+    const majorVersion = parseInt(nodeVersion.slice(1).split('.')[0])
+    
+    if (majorVersion < 18) {
+      console.warn('⚠️  Рекомендуется использовать Node.js 18 или выше')
+    }
+    
+    console.log(`✅ Node.js ${nodeVersion} - совместим`)
+  }
+
+  _validateEnvironment() {
+    const requiredEnvVars = [
+      'VITE_YANDEX_MAPS_API_KEY'
+    ]
+
+    const missingVars = requiredEnvVars.filter(varName => {
+      const value = import.meta.env[varName]
+      return !value || value.includes('your_')
+    })
+
+    if (missingVars.length > 0) {
+      console.error('❌ Отсутствуют обязательные переменные окружения:', missingVars)
+      if (this.isProduction) {
+        throw new Error(`Missing environment variables: ${missingVars.join(', ')}`)
+      }
+    }
+  }
+
   get yandexMapsApiKey() {
     const key = import.meta.env.VITE_YANDEX_MAPS_API_KEY
-    if (!key || key === 'your_yandex_maps_api_key_here') {
-      throw new Error('Yandex Maps API key is not configured. Please check your .env file')
+    if (!key) {
+      throw new Error('Yandex Maps API key is required')
     }
     return key
-  },
+  }
 
-  // Базовый URL API
   get apiBaseUrl() {
-    return import.meta.env.VITE_API_BASE_URL || 'https://api.mapchap.com'
-  },
+    return import.meta.env.VITE_API_BASE_URL || 
+           (this.isDevelopment ? 'http://localhost:3001' : 'https://api.mapchap.com')
+  }
 
-  // Режим разработки
   get isDevelopment() {
-    return import.meta.env.DEV
-  },
+    return import.meta.env.DEV || import.meta.env.VITE_APP_ENV === 'development'
+  }
 
-  // Режим продакшена
   get isProduction() {
-    return import.meta.env.PROD
+    return import.meta.env.PROD || import.meta.env.VITE_APP_ENV === 'production'
+  }
+
+  get nodeEnv() {
+    return import.meta.env.MODE || 'development'
+  }
+
+  // Метод для безопасного получения переменных
+  get(key, defaultValue = null) {
+    return import.meta.env[key] || defaultValue
   }
 }
 
-// Валидация окружения при запуске
-export const validateEnvironment = () => {
-  const errors = []
-
-  if (!import.meta.env.VITE_YANDEX_MAPS_API_KEY) {
-    errors.push('VITE_YANDEX_MAPS_API_KEY is not set')
-  }
-
-  if (errors.length > 0) {
-    console.error('❌ Environment configuration errors:', errors)
-    if (import.meta.env.PROD) {
-      throw new Error(`Environment misconfiguration: ${errors.join(', ')}`)
-    }
-  } else {
-    console.log('✅ Environment configuration is valid')
-  }
-}
+// Создаем singleton instance
+export const env = new EnvironmentManager()
