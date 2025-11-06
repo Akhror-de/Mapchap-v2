@@ -1,6 +1,7 @@
+// src/services/api.service.js
 class ApiService {
   constructor() {
-    this.baseURL = 'https://api.mapchap.com'
+    this.baseURL = 'https://d5djdb4t6ohnfrpfaaic.ql6wied2.apigw.yandexcloud.net'
   }
 
   async request(endpoint, options = {}) {
@@ -15,7 +16,7 @@ class ApiService {
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`)
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
       }
 
       return await response.json()
@@ -25,15 +26,28 @@ class ApiService {
     }
   }
 
-  async getOffers() {
-    return this.request('/offers')
+  // Получить все объявления
+  async getOffers(params = {}) {
+    const query = new URLSearchParams(params).toString()
+    return this.request(`/ads${query ? `?${query}` : ''}`)
   }
 
-  async createAd(adData) {
+  // Создать объявление
+  async createOffer(offerData) {
     return this.request('/ads', {
       method: 'POST',
-      body: JSON.stringify(adData)
+      body: JSON.stringify(offerData)
     })
+  }
+
+  // Получить объявление по ID
+  async getOfferById(id) {
+    return this.request(`/ads/${id}`)
+  }
+
+  // Получить статистику
+  async getOfferStats(id) {
+    return this.request(`/ads/${id}/stats`)
   }
 }
 
