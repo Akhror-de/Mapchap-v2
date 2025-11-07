@@ -68,3 +68,23 @@ export const useOffersStore = defineStore('offers', {
     }
   }
 })
+
+// Добавьте этот метод в offers.store.js
+async deleteOffer(id) {
+  this.isLoading = true
+  this.error = null
+  try {
+    // Пока используем моковый DELETE - потом заменим на реальный API
+    // await apiService.request(`/ads/${id}`, { method: 'DELETE' })
+    
+    // Моковая реализация - удаляем из локального состояния
+    this.offers = this.offers.filter(offer => offer.id !== id)
+    return true
+  } catch (error) {
+    this.error = error.message
+    console.error('Failed to delete offer:', error)
+    throw error
+  } finally {
+    this.isLoading = false
+  }
+}
