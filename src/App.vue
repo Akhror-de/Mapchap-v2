@@ -1,77 +1,34 @@
 <template>
   <div id="app">
-    <!-- Шапка приложения -->
+    <!-- Верхняя панель с кнопками -->
     <header class="app-header">
-      <h1>🗺️ MapChap</h1>
-      <div class="header-actions">
-        <button @click="showBusinessPanel" class="btn-primary">
-          Бизнес-панель
-        </button>
-        <button @click="showProfile" class="btn-secondary">
-          Профиль
-        </button>
+      <!-- Кнопка бизнеса слева -->
+      <button @click="showBusinessPanel" class="header-btn business-btn">
+        <span class="btn-icon">🏢</span>
+        <span class="btn-text">Бизнес</span>
+      </button>
+
+      <!-- Логотип по центру -->
+      <div class="app-logo">
+        <h1>🗺️ MapChap</h1>
       </div>
+
+      <!-- Кнопка профиля справа -->
+      <button @click="showProfile" class="header-btn profile-btn">
+        <span class="btn-icon">👤</span>
+        <span class="btn-text">Профиль</span>
+      </button>
     </header>
 
-    <!-- Основной контент -->
+    <!-- Основной контент - карта -->
     <main class="app-main">
-      <!-- Карта -->
-      <div class="map-section">
-        <MapContainer />
-      </div>
-
-      <!-- Список объявлений -->
-      <div class="offers-section">
-        <div class="section-header">
-          <h3>Предложения рядом</h3>
-          <select v-model="offersStore.currentDistrict" @change="handleDistrictChange">
-            <option value="all">Все районы</option>
-            <option value="center">Центр</option>
-            <option value="north">Север</option>
-            <option value="south">Юг</option>
-          </select>
-        </div>
-
-        <div v-if="offersStore.isLoading" class="loading">
-          Загрузка предложений...
-        </div>
-
-        <div v-else-if="offersStore.error" class="error">
-          {{ offersStore.error }}
-          <button @click="loadOffers" class="btn-retry">Повторить</button>
-        </div>
-
-        <div v-else class="offers-list">
-          <div 
-            v-for="offer in offersStore.filteredOffers" 
-            :key="offer.id" 
-            class="offer-card"
-            @click="selectOffer(offer)"
-          >
-            <div class="offer-header">
-              <h4>{{ offer.name }}</h4>
-              <span class="discount-badge">-{{ offer.discount }}%</span>
-            </div>
-            <p class="offer-category">{{ getCategoryName(offer.category) }}</p>
-            <p class="offer-address">{{ offer.address }}</p>
-            <p class="offer-description">{{ offer.description }}</p>
-            <div class="offer-footer">
-              <span class="offer-views">👁️ {{ offer.views || 0 }}</span>
-              <span class="offer-likes">❤️ {{ offer.likes || 0 }}</span>
-              <button 
-                @click.stop="toggleFavorite(offer.id)"
-                class="favorite-btn"
-                :class="{ active: userStore.isFavorite(offer.id) }"
-              >
-                {{ userStore.isFavorite(offer.id) ? '★' : '☆' }}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <MapContainer />
     </main>
 
-    <!-- Бизнес-панель (модальное окно) -->
+    <!-- Нижний лист с предложениями -->
+    <BottomSheet />
+
+    <!-- Бизнес-панель -->
     <BusinessPanel 
       v-if="activePanel === 'business'" 
       @close="activePanel = null" 
@@ -90,6 +47,7 @@ import { ref, onMounted } from 'vue'
 import { useOffersStore } from './stores/offers.store'
 import { useUserStore } from './stores/user.store'
 import MapContainer from './components/map/MapContainer.vue'
+import BottomSheet from './components/common/BottomSheet.vue'
 import BusinessPanel from './components/business/BusinessPanel.vue'
 import ProfilePanel from './components/profile/ProfilePanel.vue'
 
@@ -99,17 +57,9 @@ const activePanel = ref(null)
 
 // Загрузка данных при старте приложения
 onMounted(async () => {
-  await loadOffers()
+  await offersStore.fetchOffers()
   userStore.loadFavorites()
 })
-
-const loadOffers = async () => {
-  await offersStore.fetchOffers()
-}
-
-const handleDistrictChange = () => {
-  console.log('Выбран район:', offersStore.currentDistrict)
-}
 
 const showBusinessPanel = () => {
   activePanel.value = 'business'
@@ -117,30 +67,6 @@ const showBusinessPanel = () => {
 
 const showProfile = () => {
   activePanel.value = 'profile'
-}
-
-const selectOffer = (offer) => {
-  console.log('Выбрано предложение:', offer)
-}
-
-const toggleFavorite = async (offerId) => {
-  try {
-    await userStore.toggleFavorite(offerId)
-  } catch (error) {
-    console.error('Ошибка при изменении избранного:', error)
-  }
-}
-
-const getCategoryName = (category) => {
-  const categories = {
-    cafe: 'Кафе',
-    shop: 'Магазин',
-    restaurant: 'Ресторан',
-    services: 'Услуги',
-    entertainment: 'Развлечения',
-    beauty: 'Красота'
-  }
-  return categories[category] || category
 }
 </script>
 
@@ -156,12 +82,106 @@ const getCategoryName = (category) => {
   --border-color: #dee2e6;
   --accent-blue: #007bff;
   --accent-blue-light: #e3f2fd;
-  --accent-blue-dark: #0056b3;
   --accent-green: #28a745;
   --error-color: #dc3545;
+  --shadow: 0 2px 10px rgba(0,0,0,0.1);
 }
 
-/* Темная тема (можно добавить переключатель позже) */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+  overflow: hidden;
+}
+
+#app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+/* Шапка приложения */
+.app-header {
+  background: var(--card-bg);
+  padding: 12px 16px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-bottom: 1px solid var(--border-color);
+  box-shadow: var(--shadow);
+  position: relative;
+  z-index: 100;
+  height: 60px;
+}
+
+.app-logo h1 {
+  font-size: 20px;
+  font-weight: 600;
+  color: var(--accent-blue);
+}
+
+.header-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 12px;
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  background: var(--card-bg);
+  color: var(--text-primary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+}
+
+.header-btn:hover {
+  background: var(--bg-secondary);
+  transform: translateY(-1px);
+}
+
+.header-btn:active {
+  transform: translateY(0);
+}
+
+.btn-icon {
+  font-size: 16px;
+}
+
+.btn-text {
+  display: none;
+}
+
+/* Основной контент */
+.app-main {
+  flex: 1;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Адаптивность */
+@media (min-width: 768px) {
+  .btn-text {
+    display: inline;
+  }
+  
+  .app-header {
+    padding: 12px 20px;
+  }
+  
+  .header-btn {
+    padding: 10px 16px;
+  }
+}
+
+/* Темная тема */
 @media (prefers-color-scheme: dark) {
   :root {
     --bg-primary: #121212;
@@ -175,176 +195,5 @@ const getCategoryName = (category) => {
     --accent-blue-light: #1a3d5c;
     --accent-green: #51cf66;
   }
-}
-
-* {
-  margin: 0;
-  padding: 0;
-  box-sizing: border-box;
-}
-
-body {
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg-primary);
-  color: var(--text-primary);
-}
-
-#app {
-  height: 100vh;
-  display: flex;
-  flex-direction: column;
-}
-
-/* Стили компонента */
-.app-header {
-  background: var(--card-bg);
-  padding: 16px 20px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-bottom: 1px solid var(--border-color);
-  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.app-main {
-  display: grid;
-  grid-template-columns: 1fr 400px;
-  height: calc(100vh - 80px);
-}
-
-.map-section {
-  position: relative;
-}
-
-.offers-section {
-  background: var(--bg-secondary);
-  border-left: 1px solid var(--border-color);
-  overflow-y: auto;
-  padding: 20px;
-}
-
-.section-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 20px;
-}
-
-.section-header select {
-  padding: 8px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 6px;
-  background: var(--card-bg);
-  color: var(--text-primary);
-}
-
-.offers-list {
-  display: flex;
-  flex-direction: column;
-  gap: 16px;
-}
-
-.offer-card {
-  background: var(--card-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-}
-
-.offer-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-}
-
-.offer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 8px;
-}
-
-.discount-badge {
-  background: var(--accent-green);
-  color: white;
-  padding: 4px 8px;
-  border-radius: 6px;
-  font-size: 12px;
-  font-weight: bold;
-}
-
-.offer-category {
-  color: var(--accent-blue);
-  font-size: 14px;
-  margin-bottom: 4px;
-}
-
-.offer-address {
-  color: var(--text-secondary);
-  font-size: 14px;
-  margin-bottom: 8px;
-}
-
-.offer-description {
-  color: var(--text-primary);
-  font-size: 14px;
-  line-height: 1.4;
-  margin-bottom: 12px;
-}
-
-.offer-footer {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  font-size: 12px;
-  color: var(--text-secondary);
-}
-
-.favorite-btn {
-  background: none;
-  border: none;
-  font-size: 18px;
-  cursor: pointer;
-  padding: 4px;
-}
-
-.favorite-btn.active {
-  color: gold;
-}
-
-.loading, .error {
-  text-align: center;
-  padding: 40px 20px;
-  color: var(--text-secondary);
-}
-
-.btn-retry {
-  background: var(--accent-blue);
-  color: white;
-  border: none;
-  padding: 8px 16px;
-  border-radius: 6px;
-  margin-top: 8px;
-  cursor: pointer;
-}
-
-.btn-primary, .btn-secondary {
-  padding: 8px 16px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.btn-primary {
-  background: var(--accent-blue);
-  color: white;
-}
-
-.btn-secondary {
-  background: var(--bg-secondary);
-  color: var(--text-primary);
-  border: 1px solid var(--border-color);
 }
 </style>
