@@ -69,8 +69,22 @@ export const useOffersStore = defineStore('offers', {
   }
 })
 
-// Добавьте этот метод в offers.store.js
+// Добавьте этот метод в off
 async deleteOffer(id) {
+  this.isLoading = true
+  this.error = null
+  try {
+    // Моковая реализация - удаляем из локального состояния
+    this.offers = this.offers.filter(offer => offer.id !== id)
+    return true
+  } catch (error) {
+    this.error = error.message
+    console.error('Failed to delete offer:', error)
+    throw error
+  } finally {
+    this.isLoading = false
+  }
+}
   this.isLoading = true
   this.error = null
   try {
