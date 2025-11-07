@@ -2,31 +2,146 @@
   <div class="business-panel">
     <div class="business-header">
       <button class="back-btn" @click="closePanel">
-        <i class="fas fa-arrow-left"></i>
+        ←
       </button>
       <h2>Бизнес-панель</h2>
     </div>
+    
     <div class="business-content">
       <div class="business-nav">
-        <button class="business-nav-btn active">Создать объявление</button>
-        <button class="business-nav-btn">Мои объявления</button>
-        <button class="business-nav-btn">Аналитика</button>
-        <button class="business-nav-btn">Верификация</button>
+        <button 
+          v-for="tab in tabs" 
+          :key="tab.id"
+          class="business-nav-btn" 
+          :class="{ active: activeTab === tab.id }"
+          @click="activeTab = tab.id"
+        >
+          {{ tab.name }}
+        </button>
       </div>
+
       <div class="business-section">
-        <p>Выберите раздел для работы с бизнес-аккаунтом</p>
+        <!-- Создание объявления -->
+        <div v-if="activeTab === 'create'">
+          <CreateAdForm @created="handleAdCreated" />
+        </div>
+
+        <!-- Мои объявления -->
+        <div v-else-if="activeTab === 'my-ads'">
+          <h3>Мои объявления</h3>
+          <div v-if="userAds.length === 0" class="empty-state">
+            <p>У вас пока нет объявлений</p>
+            <button @click="activeTab = 'create'" class="btn-primary">
+              Создать первое объявление
+            </button>
+          </div>
+          <div v-else class="my-ads-list">
+            <div 
+              v-for="ad in userAds" 
+              :key="ad.id" 
+              class="ad-item"
+            >
+              <div class="ad-info">
+                <h4>{{ ad.name }}</h4>
+                <p>{{ ad.description }}</p>
+                <div class="ad-stats">
+                  <span>👁️ {{ ad.views || 0 }}</span>
+                  <span>❤️ {{ ad.likes || 0 }}</span>
+                  <span :class="`status-${ad.status}`">{{ getStatusText(ad.status) }}</span>
+                </div>
+              </div>
+              <div class="ad-actions">
+                <button @click="editAd(ad)" class="btn-small">✏️</button>
+                <button @click="deleteAd(ad.id)" class="btn-small btn-danger">🗑️</button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Аналитика -->
+        <div v-else-if="activeTab === 'analytics'">
+          <h3>Аналитика</h3>
+          <div class="analytics-placeholder">
+            <p>Статистика просмотров и взаимодействий</p>
+            <!-- Здесь будет компонент аналитики -->
+          </div>
+        </div>
+
+        <!-- Верификация -->
+        <div v-else-if="activeTab === 'verification'">
+          <h3>Верификация бизнеса</h3>
+          <div class="verification-placeholder">
+            <p>Проверка ИНН и верификация компании</p>
+            <!-- Здесь будет форма верификации -->
+          </div>
+        </div>
       </div>
     </div>
   </div>
 </template>
 
 <script setup>
-import { useAppStore } from '../../stores/app.store'
+import { ref, computed } from 'vue'
+import { useOffersStore } from '../../stores/offers.store'
+import { useUserStore } from '../../stores/user.store'
+import CreateAdForm from './CreateAdForm.vue'
 
-const appStore = useAppStore()
+const offersStore = useOffersStore()
+const userStore = useUserStore()
+
+const activeTab = ref('create')
+
+const tabs = [
+  { id: 'create', name: 'Создать объявление' },
+  { id: 'my-ads', name: 'Мои объявления' },
+  { id: 'analytics', name: 'Аналитика' },
+  { id: 'verification', name: 'Верификация' }
+]
+
+// Вычисляем объявления текущего пользователя
+const userAds = computed(() => {
+  if (!userStore.user) return []
+  return offersStore.offers.filter(ad => ad.user_id === userStore.user.id)
+})
 
 const closePanel = () => {
-  appStore.setActivePanel(null)
+  // Эмитим событие закрытия
+  if (typeof defineEmits === 'function') {
+    const emit = defineEmits(['close'])
+    emit('close')
+  }
+}
+
+const handleAdCreated = (newAd) => {
+  console.log('Объявление создано:', newAd)
+  // Можно переключиться на вкладку "Мои объявления"
+  activeTab.value = 'my-ads'
+}
+
+const editAd = (ad) => {
+  console.log('Редактировать объявление:', ad)
+  // Здесь будет логика редактирования
+}
+
+const deleteAd = async (adId) => {
+  if (confirm('Вы уверены, что хотите удалить это объявление?')) {
+    try {
+      await offersStore.deleteOffer(adId)
+      console.log('Объявление удалено')
+    } catch (error) {
+      console.error('Ошибка при удалении:', error)
+      alert('Не удалось удалить объявление')
+    }
+  }
+}
+
+const getStatusText = (status) => {
+  const statuses = {
+    active: 'Активно',
+    inactive: 'Неактивно',
+    pending: 'На модерации'
+  }
+  return statuses[status] || status
 }
 </script>
 
@@ -39,6 +154,8 @@ const closePanel = () => {
   height: 100%;
   background: var(--surface-bg);
   z-index: 1000;
+  display: flex;
+  flex-direction: column;
 }
 
 .business-header {
@@ -50,36 +167,121 @@ const closePanel = () => {
   border-bottom: 1px solid var(--border-color);
 }
 
-.back-btn {
-  background: var(--surface-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  width: 36px;
-  height: 36px;
+.business-content {
+  flex: 1;
   display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .business-nav {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 8px;
-  margin-bottom: 20px;
+  padding: 16px;
+  border-bottom: 1px solid var(--border-color);
+  background: var(--card-bg);
 }
 
 .business-nav-btn {
-  background: var(--card-bg);
+  background: var(--surface-bg);
   border: 1px solid var(--border-color);
   border-radius: 8px;
   padding: 12px;
   text-align: center;
   cursor: pointer;
+  font-size: 14px;
 }
 
 .business-nav-btn.active {
   background: var(--accent-blue);
   color: white;
+  border-color: var(--accent-blue);
+}
+
+.business-section {
+  flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.empty-state {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+}
+
+.my-ads-list {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.ad-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  background: var(--card-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 16px;
+}
+
+.ad-info h4 {
+  margin: 0 0 8px 0;
+  color: var(--text-primary);
+}
+
+.ad-info p {
+  margin: 0 0 8px 0;
+  color: var(--text-secondary);
+  font-size: 14px;
+}
+
+.ad-stats {
+  display: flex;
+  gap: 12px;
+  font-size: 12px;
+  color: var(--text-secondary);
+}
+
+.status-active {
+  color: var(--accent-green);
+}
+
+.status-inactive {
+  color: var(--text-secondary);
+}
+
+.status-pending {
+  color: orange;
+}
+
+.ad-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.btn-small {
+  padding: 6px 8px;
+  border: 1px solid var(--border-color);
+  background: var(--surface-bg);
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.btn-danger {
+  color: #dc3545;
+  border-color: #dc3545;
+}
+
+.analytics-placeholder,
+.verification-placeholder {
+  text-align: center;
+  padding: 40px 20px;
+  color: var(--text-secondary);
+  background: var(--card-bg);
+  border-radius: 8px;
+  border: 1px dashed var(--border-color);
 }
 </style>
