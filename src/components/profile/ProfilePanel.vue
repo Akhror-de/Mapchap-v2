@@ -79,34 +79,49 @@
           </div>
         </div>
 
-        <!-- Мои объявления -->
-        <div v-else-if="activeMenuItem === 'my-ads'" class="my-ads-section">
-          <h3>Мои объявления</h3>
-          <div v-if="userAds.length === 0" class="empty-state">
-            <p>У вас пока нет объявлений</p>
-            <button @click="openBusinessPanel" class="btn-primary">
-              Создать первое объявление
-            </button>
-          </div>
-          <div v-else class="my-ads-list">
-            <div 
-              v-for="ad in userAds" 
-              :key="ad.id" 
-              class="ad-item"
-            >
-              <div class="ad-info">
-                <h4>{{ ad.name }}</h4>
-                <p class="ad-description">{{ ad.description }}</p>
-                <div class="ad-stats">
-                  <span>👁️ {{ ad.views || 0 }}</span>
-                  <span>❤️ {{ ad.likes || 0 }}</span>
-                  <span :class="`status-${ad.status}`">{{ getStatusText(ad.status) }}</span>
+        <!-- О приложении -->
+        <div v-else-if="activeMenuItem === 'about'" class="about-section">
+          <h3>О приложении MapChap</h3>
+          <div class="app-info">
+            <div class="app-description">
+              <p><strong>MapChap</strong> - инновационный сервис для поиска скидочных предложений и акций в вашем городе.</p>
+              <p>Мы помогаем бизнесу привлекать новых клиентов, а пользователям - находить лучшие предложения рядом.</p>
+            </div>
+
+            <div class="founders-info">
+              <h4>Основатели проекта</h4>
+              
+              <div class="founder-card">
+                <div class="founder-avatar">АХ</div>
+                <div class="founder-details">
+                  <h5>Хабибуллаев Ахрор</h5>
+                  <p class="founder-role">Основатель и CEO</p>
+                  <p class="founder-bio">Идеолог и создатель платформы MapChap. Отвечает за стратегическое развитие и общее руководство проектом.</p>
                 </div>
               </div>
-              <div class="ad-actions">
-                <button @click="viewAd(ad)" class="btn-small">👁️</button>
-                <button @click="editAd(ad)" class="btn-small">✏️</button>
+
+              <div class="founder-card">
+                <div class="founder-avatar">ЯИ</div>
+                <div class="founder-details">
+                  <h5>Яна Владимировна Ивченко</h5>
+                  <p class="founder-role">Директор по финансам (CFO)</p>
+                  <p class="founder-bio">Управляет финансовыми потоками, инвестициями и экономической стратегией развития компании.</p>
+                </div>
               </div>
+            </div>
+
+            <div class="app-details">
+              <div class="version">Версия 1.0.0</div>
+              <div class="mission">
+                <h5>Наша миссия</h5>
+                <p>Сделать поиск выгодных предложений простым, удобным и доступным для каждого.</p>
+              </div>
+            </div>
+
+            <div class="links">
+              <a href="#" class="link">Политика конфиденциальности</a>
+              <a href="#" class="link">Условия использования</a>
+              <a href="#" class="link">Служба поддержки</a>
             </div>
           </div>
         </div>
@@ -115,7 +130,7 @@
         <div v-else-if="activeMenuItem === 'settings'" class="settings-section">
           <h3>Настройки</h3>
           <div class="setting-item">
-            <label>Уведомления</label>
+            <label>Уведомления о новых предложениях</label>
             <div class="toggle-switch">
               <input type="checkbox" id="notifications" v-model="notificationsEnabled">
               <label for="notifications" class="toggle-slider"></label>
@@ -136,20 +151,6 @@
             </div>
           </div>
         </div>
-
-        <!-- О приложении -->
-        <div v-else-if="activeMenuItem === 'about'" class="about-section">
-          <h3>О приложении</h3>
-          <div class="app-info">
-            <p><strong>MapChap</strong> - сервис для поиска скидочных предложений поблизости</p>
-            <div class="version">Версия 1.0.0</div>
-            <div class="links">
-              <a href="#" class="link">Политика конфиденциальности</a>
-              <a href="#" class="link">Условия использования</a>
-              <a href="#" class="link">Поддержка</a>
-            </div>
-          </div>
-        </div>
       </div>
     </div>
   </div>
@@ -163,16 +164,15 @@ import { useOffersStore } from '../../stores/offers.store'
 const userStore = useUserStore()
 const offersStore = useOffersStore()
 
-const activeMenuItem = ref('favorites')
+const activeMenuItem = ref('about') // По умолчанию открываем "О приложении"
 const notificationsEnabled = ref(true)
 const darkModeEnabled = ref(false)
 const geolocationEnabled = ref(true)
 
 const menuItems = [
+  { id: 'about', name: 'О приложении', icon: 'ℹ️' },
   { id: 'favorites', name: 'Избранное', icon: '⭐' },
-  { id: 'my-ads', name: 'Мои объявления', icon: '📋' },
-  { id: 'settings', name: 'Настройки', icon: '⚙️' },
-  { id: 'about', name: 'О приложении', icon: 'ℹ️' }
+  { id: 'settings', name: 'Настройки', icon: '⚙️' }
 ]
 
 // Вычисляемые свойства
@@ -205,13 +205,6 @@ const closePanel = () => {
   emit('close')
 }
 
-const openBusinessPanel = () => {
-  closePanel()
-  // Эмитим событие для открытия бизнес-панели
-  const event = new CustomEvent('open-business-panel')
-  window.dispatchEvent(event)
-}
-
 const handleMenuItemClick = (item) => {
   activeMenuItem.value = item.id
 }
@@ -224,16 +217,6 @@ const removeFromFavorites = async (offerId) => {
   }
 }
 
-const viewAd = (ad) => {
-  console.log('Просмотр объявления:', ad)
-  // Можно добавить логику просмотра деталей
-}
-
-const editAd = (ad) => {
-  console.log('Редактирование объявления:', ad)
-  openBusinessPanel()
-}
-
 const getCategoryName = (category) => {
   const categories = {
     cafe: 'Кафе',
@@ -244,15 +227,6 @@ const getCategoryName = (category) => {
     beauty: 'Красота'
   }
   return categories[category] || category
-}
-
-const getStatusText = (status) => {
-  const statuses = {
-    active: 'Активно',
-    inactive: 'Неактивно', 
-    pending: 'На модерации'
-  }
-  return statuses[status] || status
 }
 
 // Загрузка данных при открытии профиля
@@ -396,6 +370,127 @@ onMounted(() => {
   overflow-y: auto;
 }
 
+/* Стили для раздела "О приложении" */
+.about-section h3 {
+  margin-bottom: 20px;
+  color: var(--text-primary);
+}
+
+.app-info {
+  background: var(--card-bg);
+  border-radius: 12px;
+  padding: 24px;
+  border: 1px solid var(--border-color);
+}
+
+.app-description {
+  margin-bottom: 24px;
+  line-height: 1.6;
+}
+
+.app-description p {
+  margin-bottom: 12px;
+}
+
+.founders-info {
+  margin-bottom: 24px;
+}
+
+.founders-info h4 {
+  margin-bottom: 16px;
+  color: var(--text-primary);
+  border-bottom: 2px solid var(--accent-blue);
+  padding-bottom: 8px;
+}
+
+.founder-card {
+  display: flex;
+  gap: 16px;
+  margin-bottom: 20px;
+  padding: 16px;
+  background: var(--bg-secondary);
+  border-radius: 8px;
+  border: 1px solid var(--border-color);
+}
+
+.founder-avatar {
+  width: 50px;
+  height: 50px;
+  border-radius: 50%;
+  background: var(--accent-blue);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-weight: bold;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.founder-details h5 {
+  margin: 0 0 4px 0;
+  color: var(--text-primary);
+  font-size: 16px;
+}
+
+.founder-role {
+  color: var(--accent-blue);
+  font-weight: 500;
+  margin: 0 0 8px 0;
+  font-size: 14px;
+}
+
+.founder-bio {
+  color: var(--text-secondary);
+  font-size: 14px;
+  line-height: 1.5;
+  margin: 0;
+}
+
+.app-details {
+  margin-bottom: 24px;
+}
+
+.version {
+  color: var(--text-secondary);
+  font-size: 14px;
+  margin-bottom: 16px;
+  text-align: center;
+  padding: 8px;
+  background: var(--bg-secondary);
+  border-radius: 6px;
+}
+
+.mission h5 {
+  margin-bottom: 8px;
+  color: var(--text-primary);
+}
+
+.mission p {
+  color: var(--text-secondary);
+  line-height: 1.5;
+}
+
+.links {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  border-top: 1px solid var(--border-color);
+  padding-top: 20px;
+}
+
+.link {
+  color: var(--accent-blue);
+  text-decoration: none;
+  font-size: 14px;
+  padding: 8px 0;
+}
+
+.link:hover {
+  text-decoration: underline;
+}
+
+/* Остальные стили (избранное, настройки) остаются такими же */
 .empty-state {
   text-align: center;
   padding: 40px 20px;
@@ -408,15 +503,13 @@ onMounted(() => {
   opacity: 0.7;
 }
 
-.favorites-list,
-.my-ads-list {
+.favorites-list {
   display: flex;
   flex-direction: column;
   gap: 12px;
 }
 
-.favorite-item,
-.ad-item {
+.favorite-item {
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
@@ -426,14 +519,12 @@ onMounted(() => {
   padding: 16px;
 }
 
-.favorite-info h4,
-.ad-info h4 {
+.favorite-info h4 {
   margin: 0 0 8px 0;
   color: var(--text-primary);
 }
 
-.offer-category,
-.ad-description {
+.offer-category {
   color: var(--text-secondary);
   font-size: 14px;
   margin-bottom: 8px;
@@ -445,8 +536,7 @@ onMounted(() => {
   margin-bottom: 8px;
 }
 
-.offer-stats,
-.ad-stats {
+.offer-stats {
   display: flex;
   gap: 12px;
   font-size: 12px;
@@ -456,18 +546,6 @@ onMounted(() => {
 .discount {
   color: var(--accent-green);
   font-weight: bold;
-}
-
-.status-active {
-  color: var(--accent-green);
-}
-
-.status-inactive {
-  color: var(--text-secondary);
-}
-
-.status-pending {
-  color: orange;
 }
 
 .remove-favorite-btn {
@@ -483,18 +561,8 @@ onMounted(() => {
   color: var(--error-color);
 }
 
-.ad-actions {
-  display: flex;
-  gap: 8px;
-}
-
-.btn-small {
-  padding: 6px 8px;
-  border: 1px solid var(--border-color);
-  background: var(--surface-bg);
-  border-radius: 4px;
-  cursor: pointer;
-  font-size: 12px;
+.settings-section h3 {
+  margin-bottom: 20px;
 }
 
 .setting-item {
@@ -552,46 +620,6 @@ input:checked + .toggle-slider {
 
 input:checked + .toggle-slider:before {
   transform: translateX(20px);
-}
-
-.about-section {
-  text-align: center;
-}
-
-.app-info {
-  background: var(--card-bg);
-  border-radius: 8px;
-  padding: 20px;
-  margin-top: 16px;
-}
-
-.version {
-  color: var(--text-secondary);
-  margin: 12px 0;
-  font-size: 14px;
-}
-
-.links {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
-  margin-top: 16px;
-}
-
-.link {
-  color: var(--accent-blue);
-  text-decoration: none;
-  font-size: 14px;
-}
-
-.btn-primary {
-  background: var(--accent-blue);
-  color: white;
-  border: none;
-  padding: 12px 20px;
-  border-radius: 8px;
-  cursor: pointer;
-  font-size: 14px;
 }
 
 .close-btn {
