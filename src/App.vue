@@ -108,7 +108,6 @@ const loadOffers = async () => {
 }
 
 const handleDistrictChange = () => {
-  // При смене района можно перезагружать предложения или фильтровать локально
   console.log('Выбран район:', offersStore.currentDistrict)
 }
 
@@ -122,7 +121,6 @@ const showProfile = () => {
 
 const selectOffer = (offer) => {
   console.log('Выбрано предложение:', offer)
-  // Можно добавить логику выделения на карте
 }
 
 const toggleFavorite = async (offerId) => {
@@ -146,7 +144,58 @@ const getCategoryName = (category) => {
 }
 </script>
 
-<style scoped>
+<style>
+/* Базовые стили */
+:root {
+  --bg-primary: #ffffff;
+  --bg-secondary: #f8f9fa;
+  --card-bg: #ffffff;
+  --surface-bg: #ffffff;
+  --text-primary: #212529;
+  --text-secondary: #6c757d;
+  --border-color: #dee2e6;
+  --accent-blue: #007bff;
+  --accent-blue-light: #e3f2fd;
+  --accent-blue-dark: #0056b3;
+  --accent-green: #28a745;
+  --error-color: #dc3545;
+}
+
+/* Темная тема (можно добавить переключатель позже) */
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg-primary: #121212;
+    --bg-secondary: #1e1e1e;
+    --card-bg: #2d2d2d;
+    --surface-bg: #1e1e1e;
+    --text-primary: #ffffff;
+    --text-secondary: #a0a0a0;
+    --border-color: #404040;
+    --accent-blue: #4dabf7;
+    --accent-blue-light: #1a3d5c;
+    --accent-green: #51cf66;
+  }
+}
+
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  background: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+#app {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+/* Стили компонента */
 .app-header {
   background: var(--card-bg);
   padding: 16px 20px;
