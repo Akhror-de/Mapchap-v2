@@ -1,20 +1,11 @@
-# MapChap - Telegram Mini App
+# MapChap 🗺️
 
-Интерактивная карта заведений с выгодными предложениями.
+Карта с лучшими предложениями и скидками рядом с вами.
 
-## 🚀 Demo
-https://mapchap-new.vercel.app
+## 🚀 Деплой
 
-## 📱 Features
-- Просмотр заведений на карте
-- Поиск по категориям  
-- Геолокация "Рядом со мной"
-- Специальные предложения
+Проект автоматически деплоится на Vercel.
 
-## 🛠 Tech Stack
-- HTML5, CSS3, JavaScript
-- Telegram WebApp API
-- Vercel Hosting
+## 📱 Telegram
 
-## 📄 License
-MIT License - see LICENSE file for details
+URL для бота: https://mapchap-v2.vercel.app/?v=3.0.0&telegram=1
