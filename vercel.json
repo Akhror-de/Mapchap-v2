@@ -24,21 +24,17 @@
           "value": "no-cache, no-store, must-revalidate"
         },
         {
-          "key": "Pragma", 
+          "key": "Pragma",
           "value": "no-cache"
         },
         {
           "key": "Expires",
           "value": "0"
-        },
-        {
-          "key": "X-Robots-Tag",
-          "value": "noindex, nofollow"
         }
       ]
     }
   ],
   "env": {
-    "NODE_VERSION": "18"
+    "NODE_VERSION": "22"
   }
 }
