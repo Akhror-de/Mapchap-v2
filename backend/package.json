@@ -1,6 +1,6 @@
 {
   "name": "mapchap-backend",
-  "version": "1.0.0",
+  "version": "2.0.0",
   "description": "Backend API for MapChap - interactive map of offers",
   "type": "module",
   "main": "src/server.js",
