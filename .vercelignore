@@ -1,0 +1,10 @@
+backend/
+.git
+.gitignore
+*.md
+*.log
+.DS_Store
+node_modules
+*.local
+.env
+*.tmp
