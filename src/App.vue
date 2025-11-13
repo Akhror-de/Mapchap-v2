@@ -1,92 +1,149 @@
 <template>
   <div id="app">
-    <!-- Верхняя панель с кнопками -->
     <header class="app-header">
-      <!-- Кнопка бизнеса слева -->
-      <button @click="showBusinessPanel" class="header-btn business-btn">
-        <span class="btn-icon">🏢</span>
-        <span class="btn-text">Бизнес</span>
+      <button @click="showBusinessPanel" class="header-btn">
+        <span>🏢 Бизнес</span>
       </button>
-
-      <!-- Логотип по центру -->
+      
       <div class="app-logo">
         <h1>🗺️ MapChap</h1>
+        <div class="version">v4.0.5</div>
       </div>
 
-      <!-- Кнопка профиля справа -->
-      <button @click="showProfile" class="header-btn profile-btn">
-        <span class="btn-icon">👤</span>
-        <span class="btn-text">Профиль</span>
+      <button @click="showProfile" class="header-btn">
+        <span>👤 Профиль</span>
       </button>
     </header>
 
-    <!-- Основной контент - карта -->
     <main class="app-main">
-      <MapContainer />
+      <div class="status-panel">
+        <div class="status-item">
+          <span class="status-label">Статус:</span>
+          <span class="status-value success">✅ Работает</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Telegram:</span>
+          <span class="status-value" :class="isTelegram ? 'success' : 'neutral'">
+            {{ isTelegram ? '✅ Подключен' : '🌐 Браузер' }}
+          </span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Node.js:</span>
+          <span class="status-value success">22</span>
+        </div>
+        <div class="status-item">
+          <span class="status-label">Сборка:</span>
+          <span class="status-value success">Production</span>
+        </div>
+      </div>
+
+      <div class="map-container">
+        <h2>Карта предложений MapChap</h2>
+        <div class="map-visualization">
+          <div class="map-area">
+            <div 
+              v-for="offer in offers" 
+              :key="offer.id"
+              class="map-offer"
+              :style="{
+                left: offer.position.x + '%',
+                top: offer.position.y + '%'
+              }"
+              @click="selectOffer(offer)"
+            >
+              <div class="offer-badge">-{{ offer.discount }}%</div>
+              <div class="offer-name">{{ offer.name }}</div>
+            </div>
+          </div>
+        </div>
+        <p class="map-hint">Нажмите на предложения для подробной информации</p>
+      </div>
     </main>
 
-    <!-- Нижний лист с предложениями -->
-    <BottomSheet />
-
-    <!-- Бизнес-панель -->
     <BusinessPanel 
       v-if="activePanel === 'business'" 
       @close="activePanel = null" 
     />
 
-    <!-- Панель профиля -->
     <ProfilePanel 
       v-if="activePanel === 'profile'" 
       @close="activePanel = null" 
     />
+
+    <div v-if="isTelegram" class="telegram-badge">
+      🔗 Telegram Web App
+    </div>
   </div>
 </template>
 
-<script setup>
-import { ref, onMounted } from 'vue'
-import { useOffersStore } from './stores/offers.store'
-import { useUserStore } from './stores/user.store'
-import MapContainer from './components/map/MapContainer.vue'
-import BottomSheet from './components/common/BottomSheet.vue'
+<script>
 import BusinessPanel from './components/business/BusinessPanel.vue'
 import ProfilePanel from './components/profile/ProfilePanel.vue'
 
-const offersStore = useOffersStore()
-const userStore = useUserStore()
-const activePanel = ref(null)
-
-// Загрузка данных при старте приложения
-onMounted(async () => {
-  await offersStore.fetchOffers()
-  userStore.loadFavorites()
-})
-
-const showBusinessPanel = () => {
-  activePanel.value = 'business'
-}
-
-const showProfile = () => {
-  activePanel.value = 'profile'
+export default {
+  name: 'App',
+  components: {
+    BusinessPanel,
+    ProfilePanel
+  },
+  data() {
+    return {
+      activePanel: null,
+      isTelegram: false,
+      offers: [
+        {
+          id: 1,
+          name: 'Кофе',
+          discount: 50,
+          position: { x: 30, y: 40 },
+          description: 'Вкусный кофе со скидкой 50%'
+        },
+        {
+          id: 2,
+          name: 'Пицца',
+          discount: 30,
+          position: { x: 60, y: 25 },
+          description: 'Пицца по специальной цене'
+        },
+        {
+          id: 3,
+          name: 'Суши',
+          discount: 20,
+          position: { x: 45, y: 70 },
+          description: 'Свежие суши со скидкой'
+        }
+      ]
+    }
+  },
+  mounted() {
+    this.initTelegram()
+    console.log('MapChap Frontend v4.0.5 - Node.js 22')
+  },
+  methods: {
+    initTelegram() {
+      if (window.Telegram?.WebApp) {
+        this.isTelegram = true
+        const tg = window.Telegram.WebApp
+        tg.expand()
+        tg.enableClosingConfirmation()
+        console.log('✅ Telegram WebApp initialized')
+      }
+    },
+    showBusinessPanel() {
+      this.activePanel = 'business'
+    },
+    showProfile() {
+      this.activePanel = 'profile'
+    },
+    selectOffer(offer) {
+      console.log('Selected offer:', offer)
+      alert(`${offer.name}\nСкидка: ${offer.discount}%\n\n${offer.description}`)
+    }
+  }
 }
 </script>
 
 <style>
-/* Базовые стили */
-:root {
-  --bg-primary: #ffffff;
-  --bg-secondary: #f8f9fa;
-  --card-bg: #ffffff;
-  --surface-bg: #ffffff;
-  --text-primary: #212529;
-  --text-secondary: #6c757d;
-  --border-color: #dee2e6;
-  --accent-blue: #007bff;
-  --accent-blue-light: #e3f2fd;
-  --accent-green: #28a745;
-  --error-color: #dc3545;
-  --shadow: 0 2px 10px rgba(0,0,0,0.1);
-}
-
 * {
   margin: 0;
   padding: 0;
@@ -95,8 +152,8 @@ const showProfile = () => {
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-  background: var(--bg-primary);
-  color: var(--text-primary);
+  background: #ffffff;
+  color: #1f2937;
   overflow: hidden;
 }
 
@@ -104,96 +161,184 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: column;
-  position: relative;
 }
 
-/* Шапка приложения */
 .app-header {
-  background: var(--card-bg);
-  padding: 12px 16px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  border-bottom: 1px solid var(--border-color);
-  box-shadow: var(--shadow);
-  position: relative;
-  z-index: 100;
-  height: 60px;
+  padding: 12px 16px;
+  background: white;
+  border-bottom: 1px solid #e5e7eb;
+  flex-shrink: 0;
+}
+
+.app-logo {
+  text-align: center;
 }
 
 .app-logo h1 {
-  font-size: 20px;
-  font-weight: 600;
-  color: var(--accent-blue);
+  font-size: 1.4rem;
+  color: #1e40af;
+  margin-bottom: 2px;
+}
+
+.version {
+  font-size: 0.7rem;
+  color: #6b7280;
 }
 
 .header-btn {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  padding: 8px 12px;
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  background: var(--card-bg);
-  color: var(--text-primary);
+  background: none;
+  border: none;
+  padding: 10px 14px;
+  border-radius: 10px;
   cursor: pointer;
-  transition: all 0.2s ease;
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 0.9rem;
+  transition: background-color 0.2s;
 }
 
 .header-btn:hover {
-  background: var(--bg-secondary);
-  transform: translateY(-1px);
+  background: #f3f4f6;
 }
 
-.header-btn:active {
-  transform: translateY(0);
-}
-
-.btn-icon {
-  font-size: 16px;
-}
-
-.btn-text {
-  display: none;
-}
-
-/* Основной контент */
 .app-main {
   flex: 1;
+  padding: 20px;
+  overflow-y: auto;
+}
+
+.status-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin-bottom: 24px;
+}
+
+.status-item {
+  background: #f8fafc;
+  padding: 12px;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.status-label {
+  display: block;
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-bottom: 4px;
+}
+
+.status-value {
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+.status-value.success {
+  color: #059669;
+}
+
+.status-value.neutral {
+  color: #6b7280;
+}
+
+.map-container {
+  background: white;
+  border-radius: 12px;
+  padding: 24px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+
+.map-container h2 {
+  text-align: center;
+  margin-bottom: 20px;
+  color: #1e40af;
+}
+
+.map-visualization {
+  width: 100%;
+  margin-bottom: 16px;
+}
+
+.map-area {
+  width: 100%;
+  height: 400px;
+  background: linear-gradient(135deg, #1e3a8a, #3730a3);
+  border-radius: 8px;
   position: relative;
-  overflow: hidden;
+  border: 3px solid #4f46e5;
 }
 
-/* Адаптивность */
-@media (min-width: 768px) {
-  .btn-text {
-    display: inline;
-  }
-  
+.map-offer {
+  position: absolute;
+  cursor: pointer;
+  transform: translate(-50%, -50%);
+  transition: all 0.3s ease;
+  text-align: center;
+}
+
+.map-offer:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+}
+
+.offer-badge {
+  background: #ef4444;
+  color: white;
+  padding: 8px 12px;
+  border-radius: 20px;
+  font-weight: bold;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+  box-shadow: 0 4px 8px rgba(0,0,0,0.3);
+}
+
+.offer-name {
+  color: white;
+  font-size: 0.8rem;
+  font-weight: 500;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+}
+
+.map-hint {
+  text-align: center;
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.telegram-badge {
+  position: fixed;
+  top: 10px;
+  right: 10px;
+  background: #0088cc;
+  color: white;
+  padding: 6px 12px;
+  border-radius: 15px;
+  font-size: 0.7rem;
+  z-index: 1000;
+}
+
+/* Поддержка безопасных зон */
+@supports(padding: max(0px)) {
   .app-header {
-    padding: 12px 20px;
+    padding-top: max(12px, env(safe-area-inset-top));
+    padding-left: max(16px, env(safe-area-inset-left));
+    padding-right: max(16px, env(safe-area-inset-right));
   }
   
-  .header-btn {
-    padding: 10px 16px;
+  .app-main {
+    padding-left: max(20px, env(safe-area-inset-left));
+    padding-right: max(20px, env(safe-area-inset-right));
+    padding-bottom: max(20px, env(safe-area-inset-bottom));
   }
 }
 
-/* Темная тема */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --bg-primary: #121212;
-    --bg-secondary: #1e1e1e;
-    --card-bg: #2d2d2d;
-    --surface-bg: #1e1e1e;
-    --text-primary: #ffffff;
-    --text-secondary: #a0a0a0;
-    --border-color: #404040;
-    --accent-blue: #4dabf7;
-    --accent-blue-light: #1a3d5c;
-    --accent-green: #51cf66;
+@media (max-width: 600px) {
+  .status-panel {
+    grid-template-columns: 1fr 1fr;
+  }
+  
+  .map-area {
+    height: 300px;
   }
 }
 </style>
