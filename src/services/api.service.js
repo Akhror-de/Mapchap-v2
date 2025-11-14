@@ -1,54 +1,29 @@
-// src/services/api.service.js
-class ApiService {
-  constructor() {
-    this.baseURL = 'https://d5djdb4t6ohnfrpfaaic.ql6wied2.apigw.yandexcloud.net'
-  }
+import axios from 'axios'
 
-  async request(endpoint, options = {}) {
-    try {
-      const url = `${this.baseURL}${endpoint}`
-      const response = await fetch(url, {
-        headers: {
-          'Content-Type': 'application/json',
-          ...options.headers
-        },
-        ...options
-      })
+const API_BASE_URL = 'https://d5djdb4t6ohnfrpfaaic.ql6wied2.apigw.yandexcloud.net'
 
-      if (!response.ok) {
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`)
-      }
+export const api = axios.create({
+  baseURL: API_BASE_URL,
+  timeout: 10000,
+})
 
-      return await response.json()
-    } catch (error) {
-      console.error('API request failed:', error)
-      throw error
-    }
-  }
+// Адаптируем запросы под существующие endpoint'ы
+export const apiService = {
+  // Получить все предложения
+  async getOffers() {
+    const response = await api.get('/ads')
+    return response.data
+  },
 
-  // Получить все объявления
-  async getOffers(params = {}) {
-    const query = new URLSearchParams(params).toString()
-    return this.request(`/ads${query ? `?${query}` : ''}`)
-  }
-
-  // Создать объявление
+  // Создать предложение
   async createOffer(offerData) {
-    return this.request('/ads', {
-      method: 'POST',
-      body: JSON.stringify(offerData)
-    })
-  }
+    const response = await api.post('/ads', offerData)
+    return response.data
+  },
 
-  // Получить объявление по ID
-  async getOfferById(id) {
-    return this.request(`/ads/${id}`)
-  }
-
-  // Получить статистику
-  async getOfferStats(id) {
-    return this.request(`/ads/${id}/stats`)
+  // Проверить здоровье API
+  async healthCheck() {
+    const response = await api.get('/')
+    return response.data
   }
 }
-
-export const apiService = new ApiService()
