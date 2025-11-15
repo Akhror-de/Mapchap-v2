@@ -4,7 +4,7 @@
       :settings="mapSettings"
       :coords="currentCoords"
       :zoom="zoom"
-      style="width: 100%; height: 100%; min-height: 400px;"
+      style="width: 100%; height: 100%"
       @click="onMapClick"
       :behaviors="['default']"
       :controls="['zoomControl', 'fullscreenControl']"
@@ -29,11 +29,9 @@
       />
     </yandex-map>
 
-    <!-- Наши кастомные контролы (оставляем только нужные) -->
-    <div class="custom-controls">
-      <button class="control-btn location" @click="getMyLocation">📍</button>
-      <button class="control-btn add-offer" @click="$emit('add-offer-click')">🎯</button>
-    </div>
+    <!-- Только кнопка добавления предложения -->
+    <button class="floating-btn add-offer-btn" @click="$emit('add-offer-click')">＋</button>
+    <button class="floating-btn location-btn" @click="getMyLocation">📍</button>
 
     <!-- Панель деталей предложения -->
     <div v-if="selectedOffer" class="offer-details-panel">
@@ -167,59 +165,41 @@ export default {
   width: 100%;
   height: 100%;
   position: relative;
-  overflow: hidden;
-  min-height: 400px;
 }
 
-/* Кастомные контролы */
-.custom-controls {
+.floating-btn {
   position: absolute;
-  top: 20px;
-  right: 20px;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
   z-index: 1000;
-}
-
-.control-btn {
-  width: 44px;
-  height: 44px;
   background: white;
   border: none;
-  border-radius: 12px;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
   cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.15);
-  font-size: 18px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  font-size: 20px;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all 0.2s;
 }
 
-.control-btn:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+.floating-btn:hover {
+  transform: scale(1.1);
   background: #f8f9fa;
 }
 
-.control-btn.add-offer {
+.add-offer-btn {
+  bottom: 100px;
+  right: 20px;
   background: #007bff;
   color: white;
-  font-size: 20px;
 }
 
-.control-btn.add-offer:hover {
-  background: #0056b3;
-}
-
-.control-btn.location {
-  background: #28a745;
-  color: white;
-}
-
-.control-btn.location:hover {
-  background: #1e7e34;
+.location-btn {
+  bottom: 160px;
+  right: 20px;
+  font-size: 18px;
 }
 
 /* Панель деталей предложения */
@@ -309,15 +289,20 @@ export default {
 
 /* Адаптивность */
 @media (max-width: 768px) {
-  .custom-controls {
-    top: 10px;
-    right: 10px;
+  .floating-btn {
+    width: 44px;
+    height: 44px;
+    font-size: 18px;
   }
   
-  .control-btn {
-    width: 40px;
-    height: 40px;
-    font-size: 16px;
+  .add-offer-btn {
+    bottom: 90px;
+    right: 16px;
+  }
+  
+  .location-btn {
+    bottom: 150px;
+    right: 16px;
   }
   
   .offer-details-panel {
