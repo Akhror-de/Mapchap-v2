@@ -3,18 +3,12 @@ import vue from '@vitejs/plugin-vue'
 
 export default defineConfig({
   plugins: [vue()],
-  server: {
-    host: true,
-    port: 3000
-  },
   build: {
-    target: 'esnext',
-    outDir: 'dist',
     rollupOptions: {
-      output: {
-        manualChunks: undefined
-      }
+      external: []
     }
   },
-  base: './'
+  optimizeDeps: {
+    include: ['vue-yandex-maps']
+  }
 })
