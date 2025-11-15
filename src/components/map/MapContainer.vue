@@ -1,21 +1,13 @@
 <template>
   <div class="map-container">
-    <!-- Отладочная информация -->
-    <div v-if="!mapLoaded" class="debug-info">
-      🗺️ Загрузка карты... | Ключ: {{ mapSettings.apiKey }} | Координаты: {{ currentCoords }}
-    </div>
-    
     <yandex-map
-      v-if="mapLoaded"
       :settings="mapSettings"
       :coords="currentCoords"
       :zoom="zoom"
       style="width: 100%; height: 100%; min-height: 400px;"
       @click="onMapClick"
-      :behaviors="behaviors"
-      :controls="controls"
-      @init="onMapInit"
-      @error="onMapError"
+      :behaviors="['default']"
+      :controls="['zoomControl', 'fullscreenControl']"
       ref="yandexMap"
     >
       <yandex-marker
@@ -37,14 +29,10 @@
       />
     </yandex-map>
 
-    <!-- Наши кастомные контролы -->
+    <!-- Наши кастомные контролы (оставляем только нужные) -->
     <div class="custom-controls">
-      <button class="control-btn zoom-in" @click="zoomIn">＋</button>
-      <button class="control-btn zoom-out" @click="zoomOut">－</button>
-      <button class="control-btn fullscreen" @click="toggleFullscreen">
-        {{ isFullscreen ? '⤢' : '⤡' }}
-      </button>
       <button class="control-btn location" @click="getMyLocation">📍</button>
+      <button class="control-btn add-offer" @click="$emit('add-offer-click')">🎯</button>
     </div>
 
     <!-- Панель деталей предложения -->
@@ -84,14 +72,7 @@ export default {
       },
       currentCoords: [55.751244, 37.618423],
       zoom: 12,
-      selectedOffer: null,
-      isFullscreen: false,
-      mapLoaded: false,
-      mapError: null,
-      // Убираем стандартные контролы Яндекс.Карт
-      controls: [],
-      // Настраиваем поведения карты
-      behaviors: ['drag', 'scrollZoom', 'dblClickZoom', 'multiTouch']
+      selectedOffer: null
     }
   },
   setup() {
@@ -107,18 +88,6 @@ export default {
     }
   },
   methods: {
-    onMapInit() {
-      console.log('🗺️ Яндекс.Карта успешно загружена!')
-      this.mapLoaded = true
-      this.mapError = null
-    },
-    
-    onMapError(error) {
-      console.error('❌ Ошибка загрузки Яндекс.Карт:', error)
-      this.mapError = error
-      this.mapLoaded = false
-    },
-    
     onMapClick(e) {
       const coords = e.get('coords')
       this.$emit('map-click', coords)
@@ -138,27 +107,8 @@ export default {
           },
           (error) => { 
             console.warn('Геолокация недоступна:', error)
-            alert('Не удалось определить ваше местоположение')
           }
         )
-      }
-    },
-    
-    zoomIn() {
-      if (this.zoom < 19) this.zoom += 1
-    },
-    
-    zoomOut() {
-      if (this.zoom > 9) this.zoom -= 1
-    },
-    
-    toggleFullscreen() {
-      this.isFullscreen = !this.isFullscreen
-      const mapContainer = this.$el
-      if (this.isFullscreen) {
-        mapContainer.requestFullscreen?.()
-      } else {
-        document.exitFullscreen?.()
       }
     },
     
@@ -207,15 +157,7 @@ export default {
     }
   },
   mounted() {
-    console.log('🗺️ Инициализация карты...')
-    this.mapLoaded = true // Временно для теста
-    
     this.getMyLocation()
-    
-    // Обработчик выхода из полноэкранного режима
-    document.addEventListener('fullscreenchange', () => {
-      this.isFullscreen = !!document.fullscreenElement
-    })
   }
 }
 </script>
@@ -227,20 +169,6 @@ export default {
   position: relative;
   overflow: hidden;
   min-height: 400px;
-  background: #f0f0f0; /* Фон на случай если карта не загрузится */
-}
-
-/* Отладочная информация */
-.debug-info {
-  position: absolute;
-  top: 10px;
-  left: 10px;
-  background: #ff4444;
-  color: white;
-  padding: 10px;
-  border-radius: 5px;
-  z-index: 10000;
-  font-size: 12px;
 }
 
 /* Кастомные контролы */
@@ -275,8 +203,14 @@ export default {
   background: #f8f9fa;
 }
 
-.control-btn:active {
-  transform: translateY(0);
+.control-btn.add-offer {
+  background: #007bff;
+  color: white;
+  font-size: 20px;
+}
+
+.control-btn.add-offer:hover {
+  background: #0056b3;
 }
 
 .control-btn.location {
@@ -286,15 +220,6 @@ export default {
 
 .control-btn.location:hover {
   background: #1e7e34;
-}
-
-.control-btn.fullscreen {
-  background: #6c757d;
-  color: white;
-}
-
-.control-btn.fullscreen:hover {
-  background: #545b62;
 }
 
 /* Панель деталей предложения */
@@ -400,11 +325,6 @@ export default {
     left: 10px;
     right: 10px;
     max-width: none;
-  }
-  
-  .debug-info {
-    font-size: 10px;
-    padding: 5px;
   }
 }
 </style>
