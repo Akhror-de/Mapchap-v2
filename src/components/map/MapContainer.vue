@@ -32,6 +32,7 @@
     <button class="floating-btn add-offer-btn" @click="showAddForm = true">＋</button>
     <button class="floating-btn location-btn" @click="getMyLocation">📍</button>
 
+    <!-- Модальное окно добавления предложения -->
     <div v-if="showAddForm" class="modal-overlay">
       <div class="modal-content">
         <div class="modal-header">
@@ -90,7 +91,7 @@ export default {
         version: '2.1'
       },
       currentCoords: [55.751244, 37.618423],
-      zoom: 10,
+      zoom: 12,
       showAddForm: false,
       newOffer: { title: '', description: '', category: 'food', coords: [55.751244, 37.618423] }
     }
@@ -157,13 +158,56 @@ export default {
       this.newOffer = { title: '', description: '', category: 'food', coords: this.currentCoords }
     }
   },
-  mounted() { this.getMyLocation() }
+  mounted() { 
+    this.getMyLocation()
+    
+    // Принудительное обновление карты
+    setTimeout(() => {
+      if (this.$refs.yandexMap && this.$refs.yandexMap.$map) {
+        this.$refs.yandexMap.$map.container.fitToViewport()
+      }
+    }, 1000)
+  }
 }
 </script>
 
 <style scoped>
-.map-container { width: 100%; height: 100%; position: relative; }
-.floating-btn { position: absolute; z-index: 1000; background: white; border: none; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+/* ФИКС ДЛЯ КАРТЫ - АГРЕССИВНЫЕ СТИЛИ */
+.map-container {
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  width: 100% !important;
+  height: 100% !important;
+  min-height: 500px !important;
+  background: gray; /* Временный фон для отладки */
+}
+
+/* Убедимся, что контейнер Яндекс.Карт виден */
+.map-container >>> .ymaps-map {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+}
+
+.floating-btn { 
+  position: absolute; 
+  z-index: 1000; 
+  background: white; 
+  border: none; 
+  border-radius: 50%; 
+  width: 50px; 
+  height: 50px; 
+  cursor: pointer; 
+  box-shadow: 0 2px 10px rgba(0,0,0,0.2); 
+  font-size: 20px; 
+  display: flex; 
+  align-items: center; 
+  justify-content: center; 
+  transition: all 0.2s; 
+}
 .floating-btn:hover { transform: scale(1.1); background: #f8f9fa; }
 .add-offer-btn { bottom: 100px; right: 20px; background: #007bff; color: white; }
 .location-btn { bottom: 160px; right: 20px; font-size: 18px; }
