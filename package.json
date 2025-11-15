@@ -21,4 +21,23 @@
     "@vitejs/plugin-vue": "^5.0.4",
     "vite": "^5.0.10"
   }
+{
+  "name": "mapchap-frontend",
+  "version": "4.0.6",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build", 
+    "preview": "vite preview"
+  },
+  "dependencies": {
+    "vue": "^3.3.0",
+    "pinia": "^2.1.0",
+    "vue-yandex-maps": "^1.0.1",  // ← ДОБАВЬТЕ ЭТУ СТРОКУ
+    "axios": "^1.5.0"
+  },
+  "devDependencies": {
+    "vite": "^5.4.21",
+    "@vitejs/plugin-vue": "^4.6.0"
+  }
 }
