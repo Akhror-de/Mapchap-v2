@@ -29,23 +29,47 @@
       />
     </yandex-map>
 
-    <!-- Только кнопка добавления предложения -->
-    <button class="floating-btn add-offer-btn" @click="$emit('add-offer-click')">＋</button>
+    <button class="floating-btn add-offer-btn" @click="showAddForm = true">＋</button>
     <button class="floating-btn location-btn" @click="getMyLocation">📍</button>
 
-    <!-- Панель деталей предложения -->
-    <div v-if="selectedOffer" class="offer-details-panel">
-      <div class="offer-header">
-        <h3>{{ selectedOffer.title }}</h3>
-        <button class="close-details" @click="selectedOffer = null">×</button>
-      </div>
-      <p class="offer-description">{{ selectedOffer.description }}</p>
-      <div class="offer-actions">
-        <button class="action-btn like" @click="handleLike(selectedOffer.id)" 
-                :class="{ liked: selectedOffer.likes > 0 }">
-          ❤️ {{ selectedOffer.likes }}
-        </button>
-        <span class="offer-category-badge">{{ getCategoryLabel(selectedOffer.category) }}</span>
+    <div v-if="showAddForm" class="modal-overlay">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h3>Добавить предложение</h3>
+          <button class="close-btn" @click="showAddForm = false">×</button>
+        </div>
+        
+        <form @submit.prevent="handleOfferSubmit" class="offer-form">
+          <div class="form-group">
+            <label>Название *</label>
+            <input v-model="newOffer.title" type="text" required placeholder="Что предлагаете?" maxlength="50">
+          </div>
+          <div class="form-group">
+            <label>Описание</label>
+            <textarea v-model="newOffer.description" rows="3" placeholder="Подробное описание..." maxlength="200"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Категория</label>
+            <select v-model="newOffer.category">
+              <option value="food">🍕 Еда</option>
+              <option value="entertainment">🎭 Развлечения</option>
+              <option value="shopping">🛍️ Покупки</option>
+              <option value="services">🔧 Услуги</option>
+              <option value="other">❓ Другое</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Координаты</label>
+            <div class="coords-display">
+              Ш: {{ newOffer.coords[0].toFixed(6) }}<br>
+              Д: {{ newOffer.coords[1].toFixed(6) }}
+            </div>
+          </div>
+          <div class="form-actions">
+            <button type="button" @click="showAddForm = false" class="btn-secondary">Отмена</button>
+            <button type="submit" class="btn-primary" :disabled="!newOffer.title">Добавить предложение</button>
+          </div>
+        </form>
       </div>
     </div>
   </div>
@@ -56,10 +80,7 @@ import { useOffersStore } from '@/stores/offers'
 
 export default {
   name: 'MapContainer',
-  props: { 
-    offers: { type: Array, default: () => [] },
-    selectedCoords: { type: Array, default: null }
-  },
+  props: { offers: { type: Array, default: () => [] } },
   data() {
     return {
       mapSettings: {
@@ -69,58 +90,39 @@ export default {
         version: '2.1'
       },
       currentCoords: [55.751244, 37.618423],
-      zoom: 12,
-      selectedOffer: null
+      zoom: 10,
+      showAddForm: false,
+      newOffer: { title: '', description: '', category: 'food', coords: [55.751244, 37.618423] }
     }
   },
   setup() {
     const offersStore = useOffersStore()
     return { offersStore }
   },
-  watch: {
-    selectedCoords(newCoords) {
-      if (newCoords) {
-        this.currentCoords = newCoords
-        this.zoom = 15
-      }
-    }
-  },
   methods: {
     onMapClick(e) {
       const coords = e.get('coords')
       this.$emit('map-click', coords)
     },
-    
-    onMarkerClick(offer) { 
-      this.selectedOffer = offer
-      this.$emit('offer-selected', offer) 
+    onMarkerClick(offer) { this.$emit('offer-selected', offer) },
+    async handleOfferSubmit() {
+      try {
+        await this.offersStore.addOffer({ ...this.newOffer })
+        this.showAddForm = false
+        this.resetForm()
+      } catch (error) { console.error('Ошибка при добавлении:', error) }
     },
-    
     getMyLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
             this.currentCoords = [position.coords.latitude, position.coords.longitude]
-            this.zoom = 15
+            this.zoom = 14
           },
-          (error) => { 
-            console.warn('Геолокация недоступна:', error)
-          }
+          (error) => { console.warn('Геолокация недоступна:', error) }
         )
       }
     },
-    
-    async handleLike(offerId) {
-      try {
-        await this.offersStore.likeOffer(offerId)
-        if (this.selectedOffer && this.selectedOffer.id === offerId) {
-          this.selectedOffer.likes += 1
-        }
-      } catch (error) {
-        console.error('Ошибка при лайке:', error)
-      }
-    },
-    
     getPresetByCategory(category) {
       const presets = {
         food: 'islands#blueFoodIcon',
@@ -131,7 +133,6 @@ export default {
       }
       return presets[category] || 'islands#blueIcon'
     },
-    
     getColorByCategory(category) {
       const colors = {
         food: '#28a745',
@@ -142,7 +143,6 @@ export default {
       }
       return colors[category] || '#007bff'
     },
-    
     getCategoryLabel(category) {
       const labels = {
         food: '🍕 Еда',
@@ -152,164 +152,34 @@ export default {
         other: '❓ Другое'
       }
       return labels[category] || category
+    },
+    resetForm() {
+      this.newOffer = { title: '', description: '', category: 'food', coords: this.currentCoords }
     }
   },
-  mounted() {
-    this.getMyLocation()
-  }
+  mounted() { this.getMyLocation() }
 }
 </script>
 
 <style scoped>
-.map-container {
-  width: 100%;
-  height: 100%;
-  position: relative;
-}
-
-.floating-btn {
-  position: absolute;
-  z-index: 1000;
-  background: white;
-  border: none;
-  border-radius: 50%;
-  width: 50px;
-  height: 50px;
-  cursor: pointer;
-  box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  font-size: 20px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transition: all 0.2s;
-}
-
-.floating-btn:hover {
-  transform: scale(1.1);
-  background: #f8f9fa;
-}
-
-.add-offer-btn {
-  bottom: 100px;
-  right: 20px;
-  background: #007bff;
-  color: white;
-}
-
-.location-btn {
-  bottom: 160px;
-  right: 20px;
-  font-size: 18px;
-}
-
-/* Панель деталей предложения */
-.offer-details-panel {
-  position: absolute;
-  top: 20px;
-  left: 20px;
-  background: white;
-  padding: 20px;
-  border-radius: 16px;
-  box-shadow: 0 8px 30px rgba(0,0,0,0.15);
-  max-width: 320px;
-  z-index: 1000;
-}
-
-.offer-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: flex-start;
-  margin-bottom: 12px;
-}
-
-.offer-header h3 {
-  margin: 0;
-  flex: 1;
-  margin-right: 10px;
-  color: #333;
-  font-size: 18px;
-  line-height: 1.3;
-}
-
-.close-details {
-  background: none;
-  border: none;
-  font-size: 20px;
-  cursor: pointer;
-  color: #666;
-  padding: 4px;
-  border-radius: 4px;
-}
-
-.close-details:hover {
-  background: #f8f9fa;
-}
-
-.offer-description {
-  margin: 0 0 16px 0;
-  color: #666;
-  line-height: 1.4;
-  font-size: 14px;
-}
-
-.offer-actions {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.action-btn.like {
-  background: none;
-  border: 1px solid #ddd;
-  border-radius: 20px;
-  padding: 6px 12px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.2s;
-}
-
-.action-btn.like:hover {
-  background: #fff0f0;
-  border-color: #ff6b6b;
-}
-
-.action-btn.like.liked {
-  background: #fff0f0;
-  border-color: #ff6b6b;
-  color: #ff6b6b;
-}
-
-.offer-category-badge {
-  background: #f8f9fa;
-  padding: 4px 8px;
-  border-radius: 12px;
-  font-size: 12px;
-  color: #666;
-}
-
-/* Адаптивность */
-@media (max-width: 768px) {
-  .floating-btn {
-    width: 44px;
-    height: 44px;
-    font-size: 18px;
-  }
-  
-  .add-offer-btn {
-    bottom: 90px;
-    right: 16px;
-  }
-  
-  .location-btn {
-    bottom: 150px;
-    right: 16px;
-  }
-  
-  .offer-details-panel {
-    top: 10px;
-    left: 10px;
-    right: 10px;
-    max-width: none;
-  }
-}
+.map-container { width: 100%; height: 100%; position: relative; }
+.floating-btn { position: absolute; z-index: 1000; background: white; border: none; border-radius: 50%; width: 50px; height: 50px; cursor: pointer; box-shadow: 0 2px 10px rgba(0,0,0,0.2); font-size: 20px; display: flex; align-items: center; justify-content: center; transition: all 0.2s; }
+.floating-btn:hover { transform: scale(1.1); background: #f8f9fa; }
+.add-offer-btn { bottom: 100px; right: 20px; background: #007bff; color: white; }
+.location-btn { bottom: 160px; right: 20px; font-size: 18px; }
+.modal-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: center; z-index: 2000; }
+.modal-content { background: white; border-radius: 12px; padding: 0; width: 90%; max-width: 500px; max-height: 90vh; overflow-y: auto; }
+.modal-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #eee; }
+.modal-header h3 { margin: 0; color: #333; }
+.close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #666; }
+.offer-form { padding: 20px; }
+.form-group { margin-bottom: 20px; }
+.form-group label { display: block; margin-bottom: 5px; font-weight: 500; color: #333; }
+.form-group input, .form-group textarea, .form-group select { width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+.coords-display { padding: 10px; background: #f8f9fa; border-radius: 6px; font-family: monospace; font-size: 12px; color: #666; }
+.form-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 30px; }
+.btn-primary, .btn-secondary { padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; }
+.btn-primary { background: #007bff; color: white; }
+.btn-primary:disabled { background: #ccc; cursor: not-allowed; }
+.btn-secondary { background: #6c757d; color: white; }
 </style>
