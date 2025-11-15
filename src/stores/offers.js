@@ -9,7 +9,6 @@ export const useOffersStore = defineStore('offers', {
   }),
   
   actions: {
-    // ✅ СУЩЕСТВУЮЩИЕ ACTIONS - БЕЗ ИЗМЕНЕНИЙ
     async fetchOffers() {
       this.loading = true
       try {
@@ -55,19 +54,7 @@ export const useOffersStore = defineStore('offers', {
       }
     },
     
-    getMockOffers() {
-      return [{
-        id: 1,
-        title: 'Тестовое предложение',
-        description: 'Это тестовое предложение для разработки',
-        category: 'food',
-        coords: [55.751244, 37.618423],
-        likes: 5,
-        views: 100
-      }]
-    },
-
-    // 🆕 НОВЫЕ ACTIONS - ДОБАВЛЯЕМ В КОНЕЦ
+    // ДОБАВЛЕН МЕТОД ДЛЯ ЛАЙКОВ
     async likeOffer(offerId) {
       try {
         const updatedOffer = await apiService.likeOffer(offerId)
@@ -81,7 +68,8 @@ export const useOffersStore = defineStore('offers', {
         throw error
       }
     },
-
+    
+    // ДОБАВЛЕН МЕТОД ДЛЯ СТАТИСТИКИ
     async fetchStats() {
       try {
         return await apiService.getStats()
@@ -89,6 +77,18 @@ export const useOffersStore = defineStore('offers', {
         console.error('Ошибка загрузки статистики:', error)
         return { totalOffers: 0, activeUsers: 0, totalLikes: 0, totalViews: 0 }
       }
+    },
+    
+    getMockOffers() {
+      return [{
+        id: 1,
+        title: 'Тестовое предложение',
+        description: 'Это тестовое предложение для разработки',
+        category: 'food',
+        coords: [55.751244, 37.618423],
+        likes: 5,
+        views: 100
+      }]
     }
   }
 })
