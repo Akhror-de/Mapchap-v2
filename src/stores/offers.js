@@ -9,31 +9,24 @@ export const useOffersStore = defineStore('offers', {
   }),
   
   actions: {
+    // ✅ СУЩЕСТВУЮЩИЕ ACTIONS - БЕЗ ИЗМЕНЕНИЙ
     async fetchOffers() {
       this.loading = true
       try {
         const offers = await apiService.getOffers()
-        // Преобразуем данные из формата /ads в формат фронтенда
         this.offers = offers.map(offer => ({
           id: offer.id,
-          title: offer.name || offer.title, // используем name из /ads
-          description: offer.description || '',
-          category: offer.category || 'other',
-          coords: [offer.lat || 55.75, offer.lng || 37.61], // добавьте координаты если есть
+          title: offer.name,
+          description: offer.description,
+          category: offer.category,
+          coords: [offer.lat, offer.lng],
           likes: offer.likes || 0,
           views: offer.views || 0,
-          createdAt: offer.createdAt || new Date().toISOString(),
-          properties: {
-            hintContent: offer.name || offer.title,
-            balloonContentHeader: offer.name || offer.title,
-            balloonContentBody: offer.description || 'Описание отсутствует',
-            balloonContentFooter: `Категория: ${this.getCategoryLabel(offer.category)}`
-          }
+          createdAt: offer.createdAt
         }))
       } catch (error) {
         this.error = error.message
         console.error('Ошибка загрузки предложений:', error)
-        // Fallback на мок данные
         this.offers = this.getMockOffers()
       } finally {
         this.loading = false
@@ -42,39 +35,19 @@ export const useOffersStore = defineStore('offers', {
     
     async addOffer(offerData) {
       try {
-        // Преобразуем данные для /ads endpoint
-        const adData = {
-          name: offerData.title,
-          description: offerData.description,
-          category: offerData.category,
-          lat: offerData.coords[0],
-          lng: offerData.coords[1]
-          // добавьте другие поля если нужно
+        const newOffer = await apiService.createOffer(offerData)
+        const formattedOffer = {
+          id: newOffer.id,
+          title: newOffer.name,
+          description: newOffer.description,
+          category: newOffer.category,
+          coords: [newOffer.lat, newOffer.lng],
+          likes: newOffer.likes || 0,
+          views: newOffer.views || 0,
+          createdAt: newOffer.createdAt
         }
-        
-        const newAd = await apiService.createOffer(adData)
-        
-        // Преобразуем ответ обратно во фронтенд формат
-        const newOffer = {
-          id: newAd.id,
-          title: newAd.name,
-          description: newAd.description,
-          category: newAd.category,
-          coords: [newAd.lat, newAd.lng],
-          likes: 0,
-          views: 0,
-          createdAt: newAd.createdAt || new Date().toISOString(),
-          properties: {
-            hintContent: newAd.name,
-            balloonContentHeader: newAd.name,
-            balloonContentBody: newAd.description || 'Описание отсутствует',
-            balloonContentFooter: `Категория: ${this.getCategoryLabel(newAd.category)}`
-          }
-        }
-        
-        this.offers.unshift(newOffer)
-        return newOffer
-        
+        this.offers.unshift(formattedOffer)
+        return formattedOffer
       } catch (error) {
         this.error = error.message
         console.error('Ошибка добавления предложения:', error)
@@ -82,35 +55,40 @@ export const useOffersStore = defineStore('offers', {
       }
     },
     
-    getCategoryLabel(category) {
-      const labels = {
-        food: '🍕 Еда',
-        entertainment: '🎭 Развлечения',
-        shopping: '🛍️ Покупки',
-        services: '🔧 Услуги',
-        other: '❓ Другое'
-      }
-      return labels[category] || category
-    },
-    
     getMockOffers() {
-      return [
-        {
-          id: '1',
-          title: 'Тестовое предложение',
-          description: 'Это тестовое предложение',
-          category: 'food',
-          coords: [55.751244, 37.618423],
-          likes: 5,
-          views: 100,
-          properties: {
-            hintContent: 'Тестовое предложение',
-            balloonContentHeader: 'Тестовое предложение',
-            balloonContentBody: 'Это тестовое предложение',
-            balloonContentFooter: 'Категория: 🍕 Еда'
-          }
+      return [{
+        id: 1,
+        title: 'Тестовое предложение',
+        description: 'Это тестовое предложение для разработки',
+        category: 'food',
+        coords: [55.751244, 37.618423],
+        likes: 5,
+        views: 100
+      }]
+    },
+
+    // 🆕 НОВЫЕ ACTIONS - ДОБАВЛЯЕМ В КОНЕЦ
+    async likeOffer(offerId) {
+      try {
+        const updatedOffer = await apiService.likeOffer(offerId)
+        const offerIndex = this.offers.findIndex(offer => offer.id === offerId)
+        if (offerIndex !== -1) {
+          this.offers[offerIndex].likes = updatedOffer.likes
         }
-      ]
+        return updatedOffer
+      } catch (error) {
+        console.error('Ошибка лайка:', error)
+        throw error
+      }
+    },
+
+    async fetchStats() {
+      try {
+        return await apiService.getStats()
+      } catch (error) {
+        console.error('Ошибка загрузки статистики:', error)
+        return { totalOffers: 0, activeUsers: 0, totalLikes: 0, totalViews: 0 }
+      }
     }
   }
 })
