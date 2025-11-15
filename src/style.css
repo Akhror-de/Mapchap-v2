@@ -1,121 +1,37 @@
-/* Стили для чистой карты */
-.map-container {
-  position: relative;
-  width: 100%;
+/* Глобальные стили для всего приложения */
+* {
+  box-sizing: border-box;
+}
+
+html, body {
   height: 100%;
+  margin: 0;
+  padding: 0;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
 }
 
-.map {
-  width: 100%;
+#app {
   height: 100%;
-  min-height: 400px;
-}
-
-/* Полностью скрываем элементы Яндекс.Карт */
-[class*="copyrights-pane"],
-[class*="controls-pane"],
-[class*="traffic-pane"],
-[class*="search-pane"] {
-  display: none !important;
-}
-
-/* Стили для индикатора загрузки */
-.map-loading {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: var(--bg-secondary);
   display: flex;
   flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  color: var(--text-secondary);
-  z-index: 999;
 }
 
-.map-loading p {
-  margin-top: 1rem;
-  font-size: 1rem;
+/* Принудительные стили для Яндекс.Карт */
+.ymaps-map {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
 }
 
-/* Улучшаем внешний вид элементов управления */
-.control-btn {
-  border: 1px solid var(--border-color) !important;
+.ymaps-map-container {
+  width: 100% !important;
+  height: 100% !important;
 }
 
-.control-btn:hover {
-  border-color: var(--primary-color) !important;
-}
-
-/* Анимации для плавности */
-.map-container {
-  transition: opacity 0.3s ease;
-}
-
-.loading-spinner {
-  border-width: 3px;
-}
-/* Добавьте в конец src/style.css */
-.fatal-error {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-}
-
-.error-content {
-  background: white;
-  padding: 2rem;
-  border-radius: 12px;
-  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
-  text-align: center;
-  max-width: 500px;
-  width: 90%;
-}
-
-.error-content h1 {
-  color: #dc3545;
-  margin-bottom: 1rem;
-}
-
-.error-content p {
-  color: #6c757d;
-  margin-bottom: 1.5rem;
-  line-height: 1.6;
-}
-
-.error-details {
-  background: #f8f9fa;
-  padding: 1rem;
-  border-radius: 6px;
-  margin: 1.5rem 0;
-  text-align: left;
-}
-
-.error-details p {
-  margin: 0.5rem 0;
-  font-size: 0.9rem;
-}
-
-.error-content button {
-  background: #007bff;
-  color: white;
-  border: none;
-  padding: 0.75rem 1.5rem;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 1rem;
-  transition: background 0.2s;
-}
-
-.error-content button:hover {
-  background: #0056b3;
+/* Убедимся, что все контейнеры карты имеют размер */
+.map-container,
+.ymaps-map,
+.ymaps-map-container,
+[class*="ymaps-"] {
+  box-sizing: border-box !important;
 }
