@@ -1,6 +1,12 @@
 <template>
   <div class="map-container">
+    <!-- Отладочная информация -->
+    <div v-if="!mapLoaded" class="debug-info">
+      🗺️ Загрузка карты... | Ключ: {{ mapSettings.apiKey }} | Координаты: {{ currentCoords }}
+    </div>
+    
     <yandex-map
+      v-if="mapLoaded"
       :settings="mapSettings"
       :coords="currentCoords"
       :zoom="zoom"
@@ -8,6 +14,8 @@
       @click="onMapClick"
       :behaviors="behaviors"
       :controls="controls"
+      @init="onMapInit"
+      @error="onMapError"
       ref="yandexMap"
     >
       <yandex-marker
@@ -78,6 +86,8 @@ export default {
       zoom: 12,
       selectedOffer: null,
       isFullscreen: false,
+      mapLoaded: false,
+      mapError: null,
       // Убираем стандартные контролы Яндекс.Карт
       controls: [],
       // Настраиваем поведения карты
@@ -97,6 +107,18 @@ export default {
     }
   },
   methods: {
+    onMapInit() {
+      console.log('🗺️ Яндекс.Карта успешно загружена!')
+      this.mapLoaded = true
+      this.mapError = null
+    },
+    
+    onMapError(error) {
+      console.error('❌ Ошибка загрузки Яндекс.Карт:', error)
+      this.mapError = error
+      this.mapLoaded = false
+    },
+    
     onMapClick(e) {
       const coords = e.get('coords')
       this.$emit('map-click', coords)
@@ -185,6 +207,9 @@ export default {
     }
   },
   mounted() {
+    console.log('🗺️ Инициализация карты...')
+    this.mapLoaded = true // Временно для теста
+    
     this.getMyLocation()
     
     // Обработчик выхода из полноэкранного режима
@@ -201,7 +226,21 @@ export default {
   height: 100%;
   position: relative;
   overflow: hidden;
-  min-height: 400px; /* ✅ Добавляем минимальную высоту */
+  min-height: 400px;
+  background: #f0f0f0; /* Фон на случай если карта не загрузится */
+}
+
+/* Отладочная информация */
+.debug-info {
+  position: absolute;
+  top: 10px;
+  left: 10px;
+  background: #ff4444;
+  color: white;
+  padding: 10px;
+  border-radius: 5px;
+  z-index: 10000;
+  font-size: 12px;
 }
 
 /* Кастомные контролы */
@@ -228,7 +267,6 @@ export default {
   align-items: center;
   justify-content: center;
   transition: all 0.2s ease;
-  backdrop-filter: blur(10px);
 }
 
 .control-btn:hover {
@@ -270,7 +308,6 @@ export default {
   box-shadow: 0 8px 30px rgba(0,0,0,0.15);
   max-width: 320px;
   z-index: 1000;
-  backdrop-filter: blur(10px);
 }
 
 .offer-header {
@@ -363,6 +400,11 @@ export default {
     left: 10px;
     right: 10px;
     max-width: none;
+  }
+  
+  .debug-info {
+    font-size: 10px;
+    padding: 5px;
   }
 }
 </style>
