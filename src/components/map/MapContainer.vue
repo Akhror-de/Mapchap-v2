@@ -1,5 +1,5 @@
 <template>
-  <div class="map-container">
+  <div class="map-container" ref="mapContainer">
     <yandex-map
       :settings="mapSettings"
       :coords="currentCoords"
@@ -8,6 +8,8 @@
       @click="onMapClick"
       :behaviors="['default']"
       :controls="['zoomControl', 'fullscreenControl']"
+      @init="onMapInit"
+      @error="onMapError"
       ref="yandexMap"
     >
       <yandex-marker
@@ -32,7 +34,6 @@
     <button class="floating-btn add-offer-btn" @click="showAddForm = true">＋</button>
     <button class="floating-btn location-btn" @click="getMyLocation">📍</button>
 
-    <!-- Модальное окно добавления предложения -->
     <div v-if="showAddForm" class="modal-overlay">
       <div class="modal-content">
         <div class="modal-header">
@@ -93,7 +94,8 @@ export default {
       currentCoords: [55.751244, 37.618423],
       zoom: 12,
       showAddForm: false,
-      newOffer: { title: '', description: '', category: 'food', coords: [55.751244, 37.618423] }
+      newOffer: { title: '', description: '', category: 'food', coords: [55.751244, 37.618423] },
+      mapInitialized: false
     }
   },
   setup() {
@@ -101,29 +103,70 @@ export default {
     return { offersStore }
   },
   methods: {
+    onMapInit() {
+      console.log('✅ Карта инициализирована')
+      this.mapInitialized = true
+      
+      // Принудительная перерисовка карты
+      this.$nextTick(() => {
+        setTimeout(() => {
+          this.forceMapRedraw()
+        }, 500)
+      })
+    },
+    
+    onMapError(error) {
+      console.error('❌ Ошибка карты:', error)
+      this.mapInitialized = false
+    },
+    
+    forceMapRedraw() {
+      if (this.$refs.yandexMap && this.$refs.yandexMap.$map) {
+        try {
+          const map = this.$refs.yandexMap.$map
+          map.container.fitToViewport()
+          console.log('🔄 Карта перерисована')
+        } catch (e) {
+          console.warn('Не удалось перерисовать карту:', e)
+        }
+      }
+    },
+    
     onMapClick(e) {
       const coords = e.get('coords')
       this.$emit('map-click', coords)
     },
-    onMarkerClick(offer) { this.$emit('offer-selected', offer) },
+    
+    onMarkerClick(offer) { 
+      this.selectedOffer = offer
+      this.$emit('offer-selected', offer) 
+    },
+    
     async handleOfferSubmit() {
       try {
         await this.offersStore.addOffer({ ...this.newOffer })
         this.showAddForm = false
         this.resetForm()
-      } catch (error) { console.error('Ошибка при добавлении:', error) }
+      } catch (error) { 
+        console.error('Ошибка при добавлении:', error)
+      }
     },
+    
     getMyLocation() {
       if (navigator.geolocation) {
         navigator.geolocation.getCurrentPosition(
           (position) => {
             this.currentCoords = [position.coords.latitude, position.coords.longitude]
             this.zoom = 14
+            this.forceMapRedraw()
           },
-          (error) => { console.warn('Геолокация недоступна:', error) }
+          (error) => { 
+            console.warn('Геолокация недоступна:', error)
+          }
         )
       }
     },
+    
     getPresetByCategory(category) {
       const presets = {
         food: 'islands#blueFoodIcon',
@@ -134,6 +177,7 @@ export default {
       }
       return presets[category] || 'islands#blueIcon'
     },
+    
     getColorByCategory(category) {
       const colors = {
         food: '#28a745',
@@ -144,6 +188,7 @@ export default {
       }
       return colors[category] || '#007bff'
     },
+    
     getCategoryLabel(category) {
       const labels = {
         food: '🍕 Еда',
@@ -154,25 +199,35 @@ export default {
       }
       return labels[category] || category
     },
+    
     resetForm() {
       this.newOffer = { title: '', description: '', category: 'food', coords: this.currentCoords }
     }
   },
-  mounted() { 
+  mounted() {
+    console.log('🗺️ MapContainer mounted')
+    
+    // Принудительно устанавливаем размеры контейнера
+    this.$nextTick(() => {
+      const container = this.$refs.mapContainer
+      if (container) {
+        container.style.height = '100%'
+        container.style.width = '100%'
+        container.style.position = 'absolute'
+      }
+    })
+    
     this.getMyLocation()
     
-    // Принудительное обновление карты
+    // Резервная перерисовка
     setTimeout(() => {
-      if (this.$refs.yandexMap && this.$refs.yandexMap.$map) {
-        this.$refs.yandexMap.$map.container.fitToViewport()
-      }
-    }, 1000)
+      this.forceMapRedraw()
+    }, 2000)
   }
 }
 </script>
 
 <style scoped>
-/* ФИКС ДЛЯ КАРТЫ - АГРЕССИВНЫЕ СТИЛИ */
 .map-container {
   position: absolute !important;
   top: 0 !important;
@@ -182,10 +237,10 @@ export default {
   width: 100% !important;
   height: 100% !important;
   min-height: 500px !important;
-  background: gray; /* Временный фон для отладки */
+  background: #f0f0f0; /* Серый фон пока карта не загрузилась */
 }
 
-/* Убедимся, что контейнер Яндекс.Карт виден */
+/* Убедимся, что карта занимает весь контейнер */
 .map-container >>> .ymaps-map {
   width: 100% !important;
   height: 100% !important;
