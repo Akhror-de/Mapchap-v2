@@ -1,104 +1,15 @@
 <template>
   <div class="map-container">
-    <yandex-map
-      :settings="mapSettings"
-      :coords="currentCoords"
-      :zoom="zoom"
-      style="width: 100%; height: 100%"
-      @click="onMapClick"
-      :behaviors="['default']"
-      :controls="['zoomControl', 'fullscreenControl']"
-      ref="yandexMap"
-    >
-      <yandex-marker
-        v-for="offer in offers"
-        :key="offer.id"
-        :marker-id="offer.id"
-        :coords="offer.coords"
-        :properties="{
-          hintContent: offer.title,
-          balloonContentHeader: offer.title,
-          balloonContentBody: offer.description,
-          balloonContentFooter: getCategoryLabel(offer.category)
-        }"
-        :options="{
-          preset: getPresetByCategory(offer.category),
-          iconColor: getColorByCategory(offer.category)
-        }"
-        @click="onMarkerClick(offer)"
-      />
-    </yandex-map>
-
-    <!-- Кнопка добавления предложения -->
+    <div ref="mapContainer" style="width: 100%; height: 100%"></div>
+    
+    <!-- Кнопки управления -->
     <button class="floating-btn add-offer-btn" @click="showAddForm = true">
       <span>＋</span>
     </button>
 
-    <!-- Кнопка моей локации -->
     <button class="floating-btn location-btn" @click="getMyLocation">
       <span>📍</span>
     </button>
-
-    <!-- Форма добавления предложения -->
-    <div v-if="showAddForm" class="modal-overlay">
-      <div class="modal-content">
-        <div class="modal-header">
-          <h3>Добавить предложение</h3>
-          <button class="close-btn" @click="showAddForm = false">×</button>
-        </div>
-        
-        <form @submit.prevent="handleOfferSubmit" class="offer-form">
-          <div class="form-group">
-            <label>Название *</label>
-            <input 
-              v-model="newOffer.title"
-              type="text" 
-              required 
-              placeholder="Что предлагаете?"
-              maxlength="50"
-            >
-          </div>
-          
-          <div class="form-group">
-            <label>Описание</label>
-            <textarea 
-              v-model="newOffer.description"
-              rows="3" 
-              placeholder="Подробное описание предложения..."
-              maxlength="200"
-            ></textarea>
-          </div>
-          
-          <div class="form-group">
-            <label>Категория</label>
-            <select v-model="newOffer.category">
-              <option value="food">🍕 Еда</option>
-              <option value="entertainment">🎭 Развлечения</option>
-              <option value="shopping">🛍️ Покупки</option>
-              <option value="services">🔧 Услуги</option>
-              <option value="other">❓ Другое</option>
-            </select>
-          </div>
-          
-          <div class="form-group">
-            <label>Координаты</label>
-            <div class="coords-display">
-              Ш: {{ newOffer.coords[0].toFixed(6) }}<br>
-              Д: {{ newOffer.coords[1].toFixed(6) }}
-            </div>
-          </div>
-          
-          <div class="form-actions">
-            <button type="button" @click="showAddForm = false" class="btn-secondary">
-              Отмена
-            </button>
-            <button type="submit" class="btn-primary" :disabled="!newOffer.title">
-              Добавить предложение
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -115,45 +26,78 @@ export default {
   },
   data() {
     return {
-      mapSettings: {
-        apiKey: '07b74146-5f5a-46bf-a2b1-cf6d052a41bb',
-        lang: 'ru_RU',
-        coordorder: 'latlong',
-        version: '2.1'
-      },
+      map: null,
       currentCoords: [55.751244, 37.618423],
       zoom: 10,
       showAddForm: false,
-      newOffer: {
-        title: '',
-        description: '',
-        category: 'food',
-        coords: [55.751244, 37.618423]
-      }
+      markers: []
     }
   },
   setup() {
     const offersStore = useOffersStore()
     return { offersStore }
   },
+  mounted() {
+    this.loadYandexMap()
+    this.getMyLocation()
+  },
   methods: {
-    onMapClick(e) {
-      const coords = e.get('coords')
-      this.$emit('map-click', coords)
-    },
-
-    onMarkerClick(offer) {
-      this.$emit('offer-selected', offer)
-    },
-
-    async handleOfferSubmit() {
-      try {
-        await this.offersStore.addOffer({ ...this.newOffer })
-        this.showAddForm = false
-        this.resetForm()
-      } catch (error) {
-        console.error('Ошибка при добавлении:', error)
+    loadYandexMap() {
+      // Динамическая загрузка Яндекс.Карт
+      const script = document.createElement('script')
+      script.src = `https://api-maps.yandex.ru/2.1/?apikey=07b74146-5f5a-46bf-a2b1-cf6d052a41bb&lang=ru_RU`
+      script.onload = () => {
+        ymaps.ready(this.initMap)
       }
+      document.head.appendChild(script)
+    },
+
+    initMap() {
+      this.map = new ymaps.Map(this.$refs.mapContainer, {
+        center: this.currentCoords,
+        zoom: this.zoom,
+        controls: ['zoomControl', 'fullscreenControl']
+      })
+
+      // Добавляем обработчик клика по карте
+      this.map.events.add('click', (e) => {
+        const coords = e.get('coords')
+        this.$emit('map-click', coords)
+      })
+
+      this.updateMarkers()
+    },
+
+    updateMarkers() {
+      // Удаляем старые маркеры
+      this.markers.forEach(marker => {
+        this.map.geoObjects.remove(marker)
+      })
+      this.markers = []
+
+      // Добавляем новые маркеры
+      this.offers.forEach(offer => {
+        const marker = new ymaps.Placemark(
+          offer.coords,
+          {
+            hintContent: offer.title,
+            balloonContentHeader: offer.title,
+            balloonContentBody: offer.description || 'Описание отсутствует',
+            balloonContentFooter: this.getCategoryLabel(offer.category)
+          },
+          {
+            preset: this.getPresetByCategory(offer.category),
+            iconColor: this.getColorByCategory(offer.category)
+          }
+        )
+
+        marker.events.add('click', () => {
+          this.$emit('offer-selected', offer)
+        })
+
+        this.map.geoObjects.add(marker)
+        this.markers.push(marker)
+      })
     },
 
     getMyLocation() {
@@ -164,7 +108,9 @@ export default {
               position.coords.latitude,
               position.coords.longitude
             ]
-            this.zoom = 14
+            if (this.map) {
+              this.map.setCenter(this.currentCoords, 14)
+            }
           },
           (error) => {
             console.warn('Геолокация недоступна:', error)
@@ -204,19 +150,17 @@ export default {
         other: '❓ Другое'
       }
       return labels[category] || category
-    },
-
-    resetForm() {
-      this.newOffer = {
-        title: '',
-        description: '',
-        category: 'food',
-        coords: this.currentCoords
-      }
     }
   },
-  mounted() {
-    this.getMyLocation()
+  watch: {
+    offers: {
+      handler() {
+        if (this.map) {
+          this.updateMarkers()
+        }
+      },
+      deep: true
+    }
   }
 }
 </script>
@@ -261,115 +205,5 @@ export default {
   bottom: 160px;
   right: 20px;
   font-size: 18px;
-}
-
-/* Стили для модальных окон и форм остаются как в предыдущей версии */
-.modal-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: rgba(0,0,0,0.5);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  z-index: 2000;
-}
-
-.modal-content {
-  background: white;
-  border-radius: 12px;
-  padding: 0;
-  width: 90%;
-  max-width: 500px;
-  max-height: 90vh;
-  overflow-y: auto;
-}
-
-.modal-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 20px;
-  border-bottom: 1px solid #eee;
-}
-
-.modal-header h3 {
-  margin: 0;
-  color: #333;
-}
-
-.close-btn {
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #666;
-}
-
-.offer-form {
-  padding: 20px;
-}
-
-.form-group {
-  margin-bottom: 20px;
-}
-
-.form-group label {
-  display: block;
-  margin-bottom: 5px;
-  font-weight: 500;
-  color: #333;
-}
-
-.form-group input,
-.form-group textarea,
-.form-group select {
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #ddd;
-  border-radius: 6px;
-  font-size: 14px;
-  box-sizing: border-box;
-}
-
-.coords-display {
-  padding: 10px;
-  background: #f8f9fa;
-  border-radius: 6px;
-  font-family: monospace;
-  font-size: 12px;
-  color: #666;
-}
-
-.form-actions {
-  display: flex;
-  gap: 10px;
-  justify-content: flex-end;
-  margin-top: 30px;
-}
-
-.btn-primary, .btn-secondary {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-}
-
-.btn-primary {
-  background: #007bff;
-  color: white;
-}
-
-.btn-primary:disabled {
-  background: #ccc;
-  cursor: not-allowed;
-}
-
-.btn-secondary {
-  background: #6c757d;
-  color: white;
 }
 </style>
