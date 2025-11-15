@@ -8,7 +8,6 @@ export const api = axios.create({
 })
 
 export const apiService = {
-  // ✅ СУЩЕСТВУЮЩИЕ МЕТОДЫ - БЕЗ ИЗМЕНЕНИЙ
   async getOffers() {
     try {
       const response = await api.get('/ads')
@@ -55,7 +54,7 @@ export const apiService = {
     }
   },
 
-  // 🆕 НОВЫЕ МЕТОДЫ - ДОБАВЛЯЕМ В КОНЕЦ
+  // ДОБАВЛЕН МЕТОД ДЛЯ ЛАЙКОВ
   async likeOffer(offerId) {
     try {
       const response = await api.post(`/ads/${offerId}/like`)
@@ -66,6 +65,7 @@ export const apiService = {
     }
   },
 
+  // ДОБАВЛЕН МЕТОД ДЛЯ СТАТИСТИКИ
   async getStats() {
     try {
       const response = await api.get('/stats')
