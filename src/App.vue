@@ -1,173 +1,87 @@
-<template>
-  <div class="app-layout">
-    <header class="header-panel">
-      <button class="business-btn" @click="showBusinessPanel = true">
-        <span>🏢 Бизнес</span>
-      </button>
-      <button class="profile-btn" @click="showProfilePanel = true">
-        <span>👤 Профиль</span>
-      </button>
-    </header>
-
-    <main class="map-area">
-      <MapContainer 
-        :offers="offers"
-        @offer-selected="selectOffer"
-        @map-click="handleMapClick"
-      />
-    </main>
-
-    <!-- Остальной код без изменений -->
-    <div class="bottom-sheet" :class="{ 'sheet-expanded': sheetExpanded }">
-      <!-- ... -->
-    </div>
-
-    <!-- Бизнес-панель и профиль -->
-    <!-- ... -->
-  </div>
-</template>
-
-<script>
-import MapContainer from '@/components/map/MapContainer.vue'
-import { useOffersStore } from '@/stores/offers'
-import { useUserStore } from '@/stores/user'
-
-export default {
-  name: 'App',
-  components: { MapContainer },
-  data() {
-    return {
-      sheetExpanded: true,
-      showBusinessPanel: false,
-      showProfilePanel: false,
-      selectedOffer: null,
-      currentCoords: [55.751244, 37.618423],
-      stats: { totalOffers: 0, activeUsers: 142, totalLikes: 0, totalViews: 0 }
+methods: {
+  selectOffer(offer) {
+    this.selectedOffer = offer
+    // Можно добавить центрирование карты на выбранном предложении
+  },
+  
+  handleMapClick(coords) {
+    console.log('Map clicked at:', coords)
+    // Здесь можно добавить создание нового предложения
+  },
+  
+  getCategoryIcon(category) {
+    const icons = {
+      food: '🍕',
+      entertainment: '🎭',
+      shopping: '🛍️',
+      services: '🔧',
+      other: '❓'
     }
+    return icons[category] || '📍'
   },
-  setup() {
-    const offersStore = useOffersStore()
-    const userStore = useUserStore()
-    return { offersStore, userStore }
+  
+  calculateDistance(offerCoords) {
+    if (!this.currentCoords) return '?'
+    
+    const [lat1, lon1] = this.currentCoords
+    const [lat2, lon2] = offerCoords
+    // Упрощенный расчет расстояния
+    const distance = Math.sqrt(Math.pow(lat2 - lat1, 2) + Math.pow(lon2 - lon1, 2)) * 100
+    return distance.toFixed(1)
   },
-  computed: {
-    offers() { return this.offersStore.offers },
-    filteredOffers() { return this.offers.slice(0, 10) }
-  },
-  methods: {
-    selectOffer(offer) { this.selectedOffer = offer },
-    handleMapClick(coords) { console.log('Map clicked at:', coords) },
-    getCategoryIcon(category) {
-      const icons = { food: '🍕', entertainment: '🎭', shopping: '🛍️', services: '🔧', other: '❓' }
-      return icons[category] || '📍'
-    },
-    calculateDistance(offerCoords) {
-      const [lat1, lon1] = this.currentCoords
-      const [lat2, lon2] = offerCoords
-      const distance = Math.sqrt(Math.pow(lat2 - lat1, 2) + Math.pow(lon2 - lon1, 2)) * 100
-      return distance.toFixed(1)
-    },
-    async handleLike(offerId) {
-      try {
-        await this.offersStore.likeOffer(offerId)
-        this.stats.totalLikes += 1
-      } catch (error) {
-        console.error('Ошибка при лайке:', error)
+  
+  async loadStats() {
+    try {
+      // Пока используем мок статистику
+      this.stats = {
+        totalOffers: this.offers.length,
+        activeUsers: 142,
+        views: 1250,
+        newOffersToday: 3
+      }
+    } catch (error) {
+      console.warn('Ошибка загрузки статистики:', error)
+      // Fallback статистика
+      this.stats = {
+        totalOffers: this.offers.length,
+        activeUsers: 0,
+        views: 0,
+        newOffersToday: 0
       }
     }
-  },
-  async mounted() {
-    await this.offersStore.fetchOffers()
-    this.stats.totalOffers = this.offers.length
-    
-    const stats = await this.offersStore.fetchStats()
-    this.stats = { ...this.stats, ...stats }
-    
-    if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          this.currentCoords = [position.coords.latitude, position.coords.longitude]
-        },
-        (error) => { console.warn('Геолокация недоступна:', error) }
-      )
-    }
+  }
+},
+
+async mounted() {
+  // Загружаем предложения
+  await this.offersStore.fetchOffers()
+  
+  // Загружаем статистику
+  await this.loadStats()
+  
+  // Пробуем получить геолокацию (с обработкой ошибок)
+  if (navigator.geolocation) {
+    navigator.geolocation.getCurrentPosition(
+      (position) => {
+        this.currentCoords = [
+          position.coords.latitude,
+          position.coords.longitude
+        ]
+        console.log('📍 Геолокация определена:', this.currentCoords)
+      },
+      (error) => {
+        console.warn('📍 Геолокация недоступна, используем Москву по умолчанию:', error.message)
+        // Используем Москву как fallback
+        this.currentCoords = [55.751244, 37.618423]
+      },
+      {
+        enableHighAccuracy: false, // Увеличиваем шансы на успех
+        timeout: 10000,
+        maximumAge: 60000
+      }
+    )
+  } else {
+    console.warn('📍 Геолокация не поддерживается браузером')
+    this.currentCoords = [55.751244, 37.618423]
   }
 }
-</script>
-
-<style scoped>
-/* КРИТИЧЕСКИ ВАЖНЫЕ СТИЛИ ДЛЯ КАРТЫ */
-.app-layout { 
-  height: 100vh; 
-  display: flex; 
-  flex-direction: column; 
-  position: relative; 
-  background: #f5f5f5; 
-}
-
-.map-area {
-  flex: 1;
-  position: relative;
-  min-height: 500px; /* ОБЯЗАТЕЛЬНО! */
-  background: lightblue; /* Временный фон для отладки */
-}
-
-/* Остальные стили без изменений */
-.header-panel { position: absolute; top: 0; left: 0; right: 0; height: 60px; display: flex; justify-content: space-between; align-items: center; padding: 0 16px; z-index: 1000; background: transparent; pointer-events: none; }
-.header-panel button { pointer-events: auto; background: white; border: none; padding: 10px 16px; border-radius: 20px; font-weight: 500; box-shadow: 0 2px 10px rgba(0,0,0,0.1); cursor: pointer; transition: all 0.2s; }
-.header-panel button:hover { transform: translateY(-1px); box-shadow: 0 4px 15px rgba(0,0,0,0.15); }
-.business-btn { color: #007bff; }
-.profile-btn { color: #28a745; }
-.bottom-sheet { position: absolute; bottom: 0; left: 0; right: 0; background: white; border-top-left-radius: 20px; border-top-right-radius: 20px; box-shadow: 0 -2px 20px rgba(0,0,0,0.15); z-index: 900; transition: transform 0.3s ease; max-height: 40vh; }
-.bottom-sheet:not(.sheet-expanded) { transform: translateY(calc(100% - 80px)); }
-.sheet-handle { padding: 12px 0; display: flex; justify-content: center; cursor: pointer; }
-.handle-bar { width: 40px; height: 4px; background: #ddd; border-radius: 2px; }
-.sheet-content { padding: 0 16px 20px; max-height: calc(40vh - 60px); overflow-y: auto; }
-.offers-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 8px; }
-.offers-header h3 { margin: 0; color: #333; font-size: 18px; }
-.offers-count { color: #666; font-size: 14px; }
-.offers-list { display: flex; flex-direction: column; gap: 12px; }
-.offer-card { display: flex; padding: 12px; background: #f8f9fa; border-radius: 12px; cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
-.offer-card:hover, .offer-card.active { background: white; border-color: #007bff; transform: translateY(-1px); box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-.offer-category { font-size: 24px; margin-right: 12px; display: flex; align-items: center; }
-.offer-content { flex: 1; }
-.offer-title { margin: 0 0 4px 0; font-size: 16px; font-weight: 600; color: #333; }
-.offer-description { margin: 0 0 8px 0; font-size: 14px; color: #666; line-height: 1.4; }
-.offer-meta { display: flex; justify-content: space-between; font-size: 12px; color: #888; }
-
-.like-btn {
-  background: none;
-  border: 1px solid #ddd;
-  border-radius: 12px;
-  padding: 4px 8px;
-  cursor: pointer;
-  font-size: 12px;
-  transition: all 0.2s;
-}
-
-.like-btn:hover {
-  background: #fff0f0;
-  border-color: #ff6b6b;
-}
-
-.like-btn.liked {
-  background: #fff0f0;
-  border-color: #ff6b6b;
-  color: #ff6b6b;
-}
-
-.modal-overlay { position: absolute; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5); display: flex; justify-content: center; align-items: flex-start; z-index: 2000; padding-top: 80px; }
-.modal-panel { background: white; border-radius: 20px; width: 90%; max-width: 400px; max-height: 70vh; overflow-y: auto; box-shadow: 0 10px 30px rgba(0,0,0,0.2); }
-.panel-header { display: flex; justify-content: space-between; align-items: center; padding: 20px; border-bottom: 1px solid #eee; }
-.panel-header h3 { margin: 0; color: #333; }
-.close-btn { background: none; border: none; font-size: 24px; cursor: pointer; color: #666; padding: 0; width: 30px; height: 30px; display: flex; align-items: center; justify-content: center; }
-.panel-content { padding: 20px; }
-.stats-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
-.stat-item { text-align: center; padding: 16px; background: #f8f9fa; border-radius: 12px; }
-.stat-number { font-size: 24px; font-weight: 700; color: #007bff; margin-bottom: 4px; }
-.stat-label { font-size: 12px; color: #666; }
-.user-info { display: flex; align-items: center; gap: 16px; margin-bottom: 24px; }
-.user-avatar { width: 60px; height: 60px; background: #007bff; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 24px; color: white; }
-.user-details h4 { margin: 0 0 4px 0; color: #333; }
-.user-details p { margin: 0; color: #666; font-size: 14px; }
-</style>
