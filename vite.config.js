@@ -9,9 +9,15 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
+  // ДОБАВЬТЕ ЭТИ НАСТРОЙКИ
   build: {
     rollupOptions: {
-      external: []
+      input: {
+        main: './index.html'
+      }
     }
+  },
+  server: {
+    hmr: true
   }
 })
