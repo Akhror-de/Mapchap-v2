@@ -16,7 +16,8 @@ html, body {
   flex-direction: column;
 }
 
-/* Принудительные стили для Яндекс.Карт */
+/* УДАЛЯЕМ СТИЛИ ДЛЯ ЯНДЕКС.КАРТ - ОНИ КОНФЛИКТУЮТ С LEAFLET! */
+/*
 .ymaps-map {
   width: 100% !important;
   height: 100% !important;
@@ -27,11 +28,34 @@ html, body {
   width: 100% !important;
   height: 100% !important;
 }
+*/
+
+/* ДОБАВЛЯЕМ СТИЛИ ДЛЯ LEAFLET */
+.leaflet-container {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+}
+
+.leaflet-map-container {
+  width: 100% !important;
+  height: 100% !important;
+}
 
 /* Убедимся, что все контейнеры карты имеют размер */
 .map-container,
-.ymaps-map,
-.ymaps-map-container,
-[class*="ymaps-"] {
+.leaflet-container,
+.leaflet-map-container {
   box-sizing: border-box !important;
+}
+
+/* Сброс стилей для Leaflet маркеров */
+.leaflet-marker-icon {
+  border: none !important;
+  background: transparent !important;
+}
+
+.leaflet-popup-content-wrapper {
+  border-radius: 12px !important;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.2) !important;
 }
