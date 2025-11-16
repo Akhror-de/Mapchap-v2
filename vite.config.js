@@ -9,15 +9,13 @@ export default defineConfig({
       '@': fileURLToPath(new URL('./src', import.meta.url))
     }
   },
-  // ДОБАВЬТЕ ЭТИ НАСТРОЙКИ
   build: {
-    rollupOptions: {
-      input: {
-        main: './index.html'
-      }
-    }
+    outDir: 'dist',
+    sourcemap: false,
+    chunkSizeWarningLimit: 1600
   },
   server: {
-    hmr: true
+    port: 3000,
+    host: true
   }
 })
