@@ -10,11 +10,15 @@
   "dependencies": {
     "vue": "^3.3.0",
     "pinia": "^2.1.0",
-    "vue-yandex-maps": "^1.0.1",
-    "axios": "^1.5.0"
+    "axios": "^1.5.0",
+    "leaflet": "^1.9.4"
   },
   "devDependencies": {
     "vite": "^5.4.21",
     "@vitejs/plugin-vue": "^4.6.0"
+  },
+  "engines": {
+    "node": "22.x",
+    "npm": "10.x"
   }
 }
