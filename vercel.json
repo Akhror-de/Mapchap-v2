@@ -1,23 +1,22 @@
 {
-  "name": "mapchap-frontend",
-  "version": "4.0.6",
-  "type": "module",
-  "scripts": {
-    "dev": "vite",
-    "build": "vite build",
-    "preview": "vite preview"
-  },
-  "dependencies": {
-    "vue": "^3.3.0",
-    "pinia": "^2.1.0",
-    "axios": "^1.5.0",
-    "leaflet": "^1.9.4"
-  },
-  "devDependencies": {
-    "vite": "^5.4.21",
-    "@vitejs/plugin-vue": "^4.6.0"
-  },
-  "engines": {
-    "node": "22.x"
-  }
+  "version": 2,
+  "builds": [
+    {
+      "src": "package.json",
+      "use": "@vercel/static-build",
+      "config": {
+        "distDir": "dist"
+      }
+    }
+  ],
+  "routes": [
+    {
+      "src": "/api/(.*)",
+      "dest": "https://d5djdb4t6ohnfrpfaaic.ql6wied2.apigw.yandexcloud.net/$1"
+    },
+    {
+      "src": "/(.*)",
+      "dest": "/index.html"
+    }
+  ]
 }
