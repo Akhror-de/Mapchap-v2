@@ -2,20 +2,23 @@ import { createApp } from 'vue'
 import { createPinia } from 'pinia'
 import App from './App.vue'
 
-// Импортируем правильным способом для Vue 3
-import YMapPlugin from 'vue-yandex-maps'
-
+// Создаем экземпляр приложения
 const app = createApp(App)
-app.use(createPinia())
 
-// Правильные настройки Яндекс.Карт
-const yandexMapsSettings = {
-  apiKey: '07b74146-5f5a-46bf-a2b1-cf6d052a41bb',
-  lang: 'ru_RU',
-  coordorder: 'latlong',
-  version: '2.1',
-  enterprise: false
+// Подключаем Pinia для управления состоянием
+const pinia = createPinia()
+app.use(pinia)
+
+// Монтируем приложение
+app.mount('#app')
+
+// Опционально: глобальная обработка ошибок
+app.config.errorHandler = (err, instance, info) => {
+  console.error('🚨 Глобальная ошибка Vue:', err)
+  console.error('📝 Информация:', info)
 }
 
-app.use(YMapPlugin, yandexMapsSettings)
-app.mount('#app')
+// Вывод в консоль для отладки
+console.log('🚀 Приложение MapChap запущено!')
+console.log('📍 Версия:', '4.0.6')
+console.log('🕒 Время запуска:', new Date().toLocaleString())
