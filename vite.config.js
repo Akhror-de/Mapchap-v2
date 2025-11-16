@@ -11,8 +11,12 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: false,
-    chunkSizeWarningLimit: 1600
+    rollupOptions: {
+      external: []
+    }
+  },
+  optimizeDeps: {
+    include: ['leaflet']
   },
   server: {
     port: 3000,
