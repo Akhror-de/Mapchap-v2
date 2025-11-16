@@ -5,7 +5,8 @@
       "src": "package.json",
       "use": "@vercel/static-build",
       "config": {
-        "distDir": "dist"
+        "distDir": "dist",
+        "nodeVersion": "22.x"
       }
     }
   ],
@@ -19,15 +20,12 @@
       "dest": "/index.html"
     }
   ],
-  "headers": [
-    {
-      "source": "/(.*)",
-      "headers": [
-        {
-          "key": "Content-Type",
-          "value": "text/javascript"
-        }
-      ]
+  "functions": {
+    "**/*.js": {
+      "runtime": "nodejs22.x"
     }
-  ]
+  },
+  "env": {
+    "NODE_VERSION": "22"
+  }
 }
